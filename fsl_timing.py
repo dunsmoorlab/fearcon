@@ -15,7 +15,7 @@ parser.add_argument('-s','--subj', help='Subject number', default=00, type=str)
 args = parser.parse_args()
 
 #point to the data direct
-data_dir = str(os.path.join(os.getcwd()))
+data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 
 #set numpy print options
 np.set_printoptions(precision=8)
@@ -35,7 +35,7 @@ for iteration in range(0,iterations):
 
 
 	SUBJ = 'Sub{0:0=3d}'.format(subj[iteration])
-	onsets = '%s/model/GLM/onsets'%(SUBJ)
+	onsets = '/%s/%s/model/GLM/onsets'%(data_dir,SUBJ)
 	#make the directories to store the files
 	run_folders = [
 		onsets,
@@ -83,8 +83,8 @@ for iteration in range(0,iterations):
 	base_CSmin = np.array(base_CSmin)
 
 	#save them
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run001/csplus.txt".format(subj[iteration]), base_CSplus, fmt='%.8e', delimiter='\t')
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run001/csmin.txt".format(subj[iteration]), base_CSmin, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run001/csplus.txt'%(data_dir,SUBJ), base_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run001/csmin.txt'%(data_dir,SUBJ), base_CSmin, fmt='%.8e', delimiter='\t')
 	
 
 	#do it all again for fear conditioning
@@ -120,8 +120,8 @@ for iteration in range(0,iterations):
 	fear_CSmin = np.array(fear_CSmin)
 
 	#save them
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run002/csplus.txt".format(subj[iteration]), fear_CSplus, fmt='%.8e', delimiter='\t')
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run002/csmin.txt".format(subj[iteration]), fear_CSmin, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run002/csplus.txt'%(data_dir,SUBJ), fear_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run002/csmin.txt'%(data_dir,SUBJ), fear_CSmin, fmt='%.8e', delimiter='\t')
 
 
 	#do the same for extinction, but also undo the dumb row expansion that e-prime does with the scene ITIs
@@ -168,11 +168,11 @@ for iteration in range(0,iterations):
 	ext_CSmin = np.array(ext_CSmin)
 
 	#save them
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run003/csplus.txt".format(subj[iteration]), ext_CSplus, fmt='%.8e', delimiter='\t')
-	np.savetxt("Sub{0:0=3d}/model/GLM/onsets/run003/csmin.txt".format(subj[iteration]), ext_CSmin, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run003/csplus.txt'%(data_dir,SUBJ), ext_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run003/csmin.txt'%(data_dir,SUBJ), ext_CSmin, fmt='%.8e', delimiter='\t')
 
 
-
+	print('%s GLM timing files created'%(SUBJ))
 
 
 

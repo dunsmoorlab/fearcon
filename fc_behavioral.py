@@ -18,7 +18,14 @@ parser.add_argument('-s','--subj', help='Subject number', default=00, type=str)
 args = parser.parse_args()
 
 #point to the data direct
-data_dir = str(os.path.join(os.getcwd()))
+if sys.platform == 'linux':
+	#point bash to the folder with the subjects in
+	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
+elif sys.platform == 'win32':
+	data_dir = 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA'
+#but mostly it runs on a school mac
+else:
+	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 
 #handle the subjects arg (all or one)
 if args.subj == 'all':

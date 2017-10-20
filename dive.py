@@ -8,11 +8,14 @@ import scipy as sp
 import sys
 import matplotlib.pyplot as plt
 from glob import glob
-from sklearn import svm
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import confusion_matrix
-from sklearn.feature_selection import SelectKBest, f_regression
-from sklearn.pipeline import make_pipeline
+from sklearn.feature_selection import SelectKBest, SelectPercentile, f_classif
+from sklearn.pipeline import make_pipeline, Pipeline 
+from matplotlib.backends.backend_pdf import PdfPages
+
 
 #import the local config file
 from fc_config import run_key
@@ -27,7 +30,9 @@ parser = argparse.ArgumentParser(description='Function arguments')
 #add arguments
 parser.add_argument('-s', '--subj', nargs='+', help='Subject Number', default=0, type=int)
 #parser.add_argument('-r','--runs', nargs='+', help='Load prepped data and labels for these runs', default='', type=str)
-
+parser.add_argument('-fs', '--feature_selection', help='Feature Selection', default=False, type=bool)
+parser.add_argument('-c', '--classifier', help='Machine Learning Algorithm Used', default='', type=str)
+parser.add_argument('-cat', '--categories', help='4 or 5 categories, collapsing across scenes', default='', type=str)
 #parse them
 args=parser.parse_args()
 
@@ -50,6 +55,13 @@ out = '%s/graphing/confusion_matrices/'%(data_dir)
 if not os.path.isdir(out):
 	os.mkdir(out)
 
+
+nr5_pdf = PdfPages('%s/nr5/%s_nr5.pdf'%(out,args.classifier))
+nr5_fs_pdf = PdfPages('%s/nr5/%s_nr5_ANOVA.pdf'%(out,args.classifier))
+
+nr4_pdf = PdfPages('%s/nr4/%s_nr4.pdf'%(out,args.classifier))
+nr4_fs_pdf = PdfPages('%s/nr4/%s_nr4_ANOVA.pdf'%(out,args.classifier))
+
 for subject in args.subj:
 	#identify the subject
 	SUBJ = 'Sub00%s'%(subject)
@@ -67,7 +79,7 @@ for subject in args.subj:
 
 
 	#shift over 2 for HDR
-	hdr_shift = 2
+	hdr_shift = 3
 	end_shift = 6 - hdr_shift
 
 	data = {phase: data[phase][hdr_shift:-end_shift] for phase in data.keys()}
@@ -79,62 +91,202 @@ for subject in args.subj:
 	#take out rest
 	rest_index = {phase: np.where(labels[phase]=='rest') for phase in labels.keys()}
 
-	#copy the data for each analyses
-	#no rest, 5 cat
-	nr5_data = data
-	nr5_labels = labels
+	if args.categories == '5':
+			#copy the data for each analyses
+			#no rest, 5 cat
+		nr5_data = {phase: data[phase] for phase in data.keys()}
+		nr5_labels = {phase: labels[phase] for phase in labels.keys()}
 
-	for phase in nr5_data.keys():
-		if phase == 'extinction':
-			nr5_data[phase] = nr5_data[phase]
-		else:
-			nr5_data[phase] = np.delete(nr5_data[phase], rest_index[phase], axis=0)
+		for phase in nr5_data.keys():
+			if phase == 'extinction':
+				nr5_data[phase] = nr5_data[phase]
+			else:
+				nr5_data[phase] = np.delete(nr5_data[phase], rest_index[phase], axis=0)
 
-	for phase in nr5_labels.keys():
-		if phase == 'extinction':
-			nr5_labels[phase] = nr5_labels[phase]
-		else:
-			nr5_labels[phase] = np.delete(nr5_labels[phase], rest_index[phase], axis=0)
+		for phase in nr5_labels.keys():
+			if phase == 'extinction':
+				nr5_labels[phase] = nr5_labels[phase]
+			else:
+				nr5_labels[phase] = np.delete(nr5_labels[phase], rest_index[phase], axis=0)
 
-	#iteratively run classification on localizer runs, swapping what is trained and tested
-	clf = svm.LinearSVC()
+		#iteratively run classification on localizer runs, swapping what is trained and tested
+		if args.classifier == 'svm':
+			clf = LinearSVC()
+		elif args.classifier == 'logreg':
+			clf = LogisticRegression()
+		
+		nr5_names = ['animal','tool','outdoor','indoor','scrambled']
 
-	#ok, I need to figure out the difference between f_regression and f_classif,
-	#and need to correctly implement feature selection as to avoid permanently changing data
-	#might have to break up single line of code classifier
-	
-	anova_filter = SelectKBest(f_regression, k=1000)
+		
+		if args.feature_selection == False:
+		
 
-	anova_clf = make_pipeline(anova_filter, clf)
+			nr5_res1 = clf.fit( nr5_data['localizer_1'], nr5_labels['localizer_1'] ).predict( nr5_data['localizer_2'] )
+			nr5_cfmat1 = confusion_matrix( nr5_labels['localizer_2'], nr5_res1, labels=nr5_names )
 
-	#nr5_clf1.fit(nr5_data['localizer_1'],labels['localizer_1'])
-	nr5_names = ['animal','tool','outdoor','indoor','scrambled']
+			nr5_res2 = clf.fit( nr5_data['localizer_2'], nr5_labels['localizer_2'] ).predict( nr5_data['localizer_1'] )
+			nr5_cfmat2 = confusion_matrix( nr5_labels['localizer_1'], nr5_res2, labels=nr5_names )
 
-	nr5_res1 = anova_clf.fit( nr5_data['localizer_1'], nr5_labels['localizer_1'] ).predict( nr5_data['localizer_2'] )
-	nr5_cfmat1 = confusion_matrix( nr5_labels['localizer_2'], nr5_res1, labels=nr5_names )
-
-	nr5_res2 = anova_clf.fit( nr5_data['localizer_2'], nr5_labels['localizer_2'] ).predict( nr5_data['localizer_1'] )
-	nr5_cfmat2 = confusion_matrix( nr5_labels['localizer_1'], nr5_res2, labels=nr5_names )
-
-	nr5_cfmat = np.mean( np.array( [ nr5_cfmat1, nr5_cfmat2 ] ), axis=0 )
-
-
-	nr5_cfmat_normal = nr5_cfmat.astype('float') / nr5_cfmat.sum(axis=1)[:, np.newaxis]
-	accuracy = np.mean(np.diagonal(nr5_cfmat_normal))
+			nr5_cfmat = np.mean( np.array( [ nr5_cfmat1, nr5_cfmat2 ] ), axis=0 )
 
 
-	plot_confusion_matrix( nr5_cfmat, classes=nr5_names, normalize=True, title='%s No rest, 5 categories, ANOVA; Mean acc = %s'%(SUBJ,accuracy), save='%s/nr5/%s_nr5.jpg'%(out,SUBJ) )
-	nr5_plt = plt.show()
+			nr5_cfmat_normal = nr5_cfmat.astype('float') / nr5_cfmat.sum(axis=1)[:, np.newaxis]
+			nr5_accuracy = np.mean(np.diagonal(nr5_cfmat_normal))
 
-	comp1 = len(np.where((nr5_res1==nr5_labels['localizer_2']) == True)[0])
-	comp2 = len(np.where((nr5_res2==nr5_labels['localizer_1']) == True)[0])
 
-	qa_acc = np.mean([comp1,comp2]) / 160
+			plot_confusion_matrix( nr5_cfmat, classes=nr5_names ,normalize=True, title='%s No rest, 5 categories, Shift %sTRs; Mean acc = %s'%(SUBJ,hdr_shift,nr5_accuracy), save='pdf', pdf=nr5_pdf )
 
-	if qa_acc != accuracy:
-		print('QA accuracy error, %s != %s'%(accuracy,qa_acc))
-		sys.exit()
+			comp1 = len(np.where((nr5_res1==nr5_labels['localizer_2']) == True)[0])
+			comp2 = len(np.where((nr5_res2==nr5_labels['localizer_1']) == True)[0])
 
+			qa_acc = np.mean([comp1,comp2]) / 160
+
+			if qa_acc != nr5_accuracy:
+				print('QA accuracy error, %s != %s'%(nr5_accuracy,qa_acc))
+				sys.exit()
+
+		if args.feature_selection == True:
+			
+			feature_selection = SelectKBest(f_classif, k=1000)
+			
+			anova_clf = Pipeline([('anova', feature_selection), ('clf', clf)])
+			#anova_filter = SelectPercentile(f_classif, percentile=75)
+			
+			nr5_data_reduced = np.concatenate([nr5_data['localizer_1'],nr5_data['localizer_2']])
+			
+			nr5_labels_cv = np.concatenate([nr5_labels['localizer_1'],nr5_labels['localizer_2']])
+
+			
+			run_index = np.zeros(len(nr5_labels_cv))
+			run_index[0:160] = 1
+			run_index[160:] = 2
+
+			anova_clf.fit(nr5_data_reduced, nr5_labels_cv)
+
+			nr5_fs_cv = cross_val_score(anova_clf, nr5_data_reduced, nr5_labels_cv, groups=run_index, cv=2)
+			nr5_fs_cv_res = nr5_fs_cv.mean()
+
+			print('%s nr5 cv score = %s'%(SUBJ,nr5_fs_cv_res))
+			#nr5_res1_fs = clf.fit( nr5_data_reduced['localizer_1'], nr5_labels['localizer_1'] ).predict( nr5_data_reduced['localizer_2'] )
+			#nr5_cfmat1_fs = confusion_matrix( nr5_labels['localizer_2'], nr5_res1_fs, labels=nr5_names )
+
+			#nr5_res2_fs = clf.fit( nr5_data_reduced['localizer_2'], nr5_labels['localizer_2'] ).predict( nr5_data_reduced['localizer_1'] )
+			#nr5_cfmat2_fs = confusion_matrix( nr5_labels['localizer_1'], nr5_res2_fs, labels=nr5_names )
+
+			#nr5_cfmat_fs = np.mean( np.array( [ nr5_cfmat1_fs, nr5_cfmat2_fs ] ), axis=0 )
+
+
+			#nr5_cfmat_normal_fs = nr5_cfmat_fs.astype('float') / nr5_cfmat_fs.sum(axis=1)[:, np.newaxis]
+			#nr5_accuracy_fs = np.mean(np.diagonal(nr5_cfmat_normal_fs))
+
+
+			#plot_confusion_matrix( nr5_cfmat_fs, classes=nr5_names ,normalize=True, title='%s No rest, 5 categories, ANOVA, Shift %sTRs; Mean acc = %s'%(SUBJ,hdr_shift,nr5_accuracy_fs), save='pdf', pdf=nr5_fs_pdf )
+			
+	####################################################################################################
+	if args.categories == '4':
+
+		nr4_data = {phase: data[phase] for phase in data.keys()}
+		nr4_labels = {phase: labels[phase] for phase in labels.keys()}
+
+		for phase in nr4_data.keys():
+			if phase == 'extinction':
+				nr4_data[phase] = nr4_data[phase]
+			else:
+				nr4_data[phase] = np.delete(nr4_data[phase], rest_index[phase], axis=0)
+
+		for phase in nr4_labels.keys():
+			if phase == 'extinction':
+				nr4_labels[phase] = nr4_labels[phase]
+			else:
+				nr4_labels[phase] = np.delete(nr4_labels[phase], rest_index[phase], axis=0)
+
+		for phase in nr4_labels.keys():
+			if phase == 'extinction':
+				nr4_labels[phase] = nr4_labels[phase]
+			else:
+				for i, label in enumerate(nr4_labels[phase]):
+					if label == 'indoor' or label == 'outdoor':
+						nr4_labels[phase][i] = 'scene'
+
+		#iteratively run classification on localizer runs, swapping what is trained and tested
+		if args.classifier == 'svm':
+			clf = LinearSVC()
+		elif args.classifier == 'logreg':
+			clf = LogisticRegression()
+		
+
+
+		
+		nr4_names = ['animal','tool','scene','scrambled']
+		
+		if args.feature_selection == False:
+
+			nr4_res1 = clf.fit( nr4_data['localizer_1'], nr4_labels['localizer_1'] ).predict( nr4_data['localizer_2'] )
+			nr4_cfmat1 = confusion_matrix( nr4_labels['localizer_2'], nr4_res1, labels=nr4_names )
+
+			nr4_res2 = clf.fit( nr4_data['localizer_2'], nr4_labels['localizer_2'] ).predict( nr4_data['localizer_1'] )
+			nr4_cfmat2 = confusion_matrix( nr4_labels['localizer_1'], nr4_res2, labels=nr4_names )
+
+			nr4_cfmat = np.mean( np.array( [ nr4_cfmat1, nr4_cfmat2 ] ), axis=0 )
+
+
+			nr4_cfmat_normal = nr4_cfmat.astype('float') / nr4_cfmat.sum(axis=1)[:, np.newaxis]
+			nr4_accuracy = np.mean(np.diagonal(nr4_cfmat_normal))
+
+
+			plot_confusion_matrix( nr4_cfmat, classes=nr4_names ,normalize=True, title='%s No rest, 4 categories, Shift %sTRs; Mean acc = %s'%(SUBJ,hdr_shift,nr4_accuracy), save='pdf', pdf=nr4_pdf )
+
+			comp1 = len(np.where((nr4_res1==nr4_labels['localizer_2']) == True)[0])
+			comp2 = len(np.where((nr4_res2==nr4_labels['localizer_1']) == True)[0])
+
+			qa_acc = np.mean([comp1,comp2]) / 160
+
+			#if qa_acc != nr4_accuracy:
+			#	print('QA accuracy error, %s != %s'%(nr4_accuracy,qa_acc))
+			#	sys.exit()
+
+		if args.feature_selection == True:
+			
+			feature_selection = SelectKBest(f_classif, k=1000)
+			
+			anova_clf = Pipeline([('anova', feature_selection), ('clf', clf)])
+			#anova_filter = SelectPercentile(f_classif, percentile=75)
+			
+			nr4_data_reduced = np.concatenate([nr4_data['localizer_1'],nr4_data['localizer_2']])
+			
+			nr4_labels_cv = np.concatenate([nr4_labels['localizer_1'],nr4_labels['localizer_2']])
+
+			
+			run_index = np.zeros(len(nr4_labels_cv))
+			run_index[0:160] = 1
+			run_index[160:] = 2
+
+			anova_clf.fit(nr4_data_reduced, nr4_labels_cv)
+
+			nr4_fs_cv = cross_val_score(anova_clf, nr4_data_reduced, nr4_labels_cv, groups=run_index, cv=2)
+			nr4_fs_cv_res = nr4_fs_cv.mean()
+
+			print('%s nr4 cv score = %s'%(SUBJ,nr4_fs_cv_res))
+			#nr4_res1_fs = clf.fit( nr4_data_reduced['localizer_1'], nr4_labels['localizer_1'] ).predict( nr4_data_reduced['localizer_2'] )
+			#nr4_cfmat1_fs = confusion_matrix( nr4_labels['localizer_2'], nr4_res1_fs, labels=nr4_names )
+
+			#nr4_res2_fs = clf.fit( nr4_data_reduced['localizer_2'], nr4_labels['localizer_2'] ).predict( nr4_data_reduced['localizer_1'] )
+			#nr4_cfmat2_fs = confusion_matrix( nr4_labels['localizer_1'], nr4_res2_fs, labels=nr4_names )
+
+			#nr4_cfmat_fs = np.mean( np.array( [ nr4_cfmat1_fs, nr4_cfmat2_fs ] ), axis=0 )
+
+
+			#nr4_cfmat_normal_fs = nr4_cfmat_fs.astype('float') / nr4_cfmat_fs.sum(axis=1)[:, np.newaxis]
+			#nr4_accuracy_fs = np.mean(np.diagonal(nr4_cfmat_normal_fs))
+
+
+			#plot_confusion_matrix( nr4_cfmat_fs, classes=nr4_names ,normalize=True, title='%s No rest, 5 categories, ANOVA, Shift %sTRs; Mean acc = %s'%(SUBJ,hdr_shift,nr4_accuracy_fs), save='pdf', pdf=nr4_fs_pdf )
+
+nr5_pdf.close()
+nr5_fs_pdf.close()
+
+nr4_pdf.close()
+nr4_fs_pdf.close()
 
 sys.exit()
 

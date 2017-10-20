@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
-                          cmap=plt.cm.Blues, save='SAVE_NAME'):
+                          cmap=plt.cm.Blues, save='SAVE_NAME', pdf=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -39,6 +39,10 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
-    plt.savefig(save,dpi='figure',bbox_inches='tight',pad_inches=.2)
+    if save == 'pdf':
+        pdf.savefig()
+
+    else:
+        plt.savefig(save,dpi='figure',bbox_inches='tight',pad_inches=.2)
 
     plt.close()

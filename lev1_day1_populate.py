@@ -32,7 +32,7 @@ for dir in list(subdirs):
 
   #put NVOLS in here if needed
   replacements = {'SUBJ':SUBJ, 'PHASE':PHASE}
-  with open("%s/template_lev1.fsf"%(fsfdir)) as infile: 
+  with open("%s/template_lev1_nl.fsf"%(fsfdir)) as infile: 
     with open("%s/lev1/design_%s_%s.fsf"%(fsfdir, SUBJ, PHASE), 'w') as outfile:
         for line in infile:
           # Note, since the video, I've changed "iteritems" to "items"
