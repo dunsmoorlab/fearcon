@@ -301,13 +301,6 @@ for iteration in range(0,iterations):
 				blk3_6[0] += 1
 			elif day1_condition[stim] == 'CS-':
 				blk3_6[1] += 1
-	#9/21 - there seems to be a problem with the blocks here, during extinction there are multiple blocks that
-	#have more than 4 responses per condition, which shouldn't be possible
-	#maybe im not breaking down extinciton properly? idk, needs to be fixed!
-	#i think maybe im not referencing 'condition' correctly, in that im using the pre-broken down index and not a condensed one that reflects the folding i did with extinciton...
-	#oops
-	#make a new variable that is the condition for just the day1 stims and then use it for the blocking script
-	#sys.exit()
 
 
 	#now we need to convert the [block hit counts] into corrected recognition rates! 
@@ -397,7 +390,7 @@ for iteration in range(0,iterations):
 	ind_block_cr['Phase'] = ['Baseline'] * 12 + ['Fear_Conditioning'] * 12 + ['Extinction'] * 12
 	ind_block_cr['Condition'] = ['CS+', 'CS-'] * 18
 	ind_block_cr['Block'] = ['Block_1']*2 + ['Block_2']*2 + ['Block_3']*2 + ['Block_4']*2 + ['Block_5']*2 + ['Block_6']*2 + ['Block_7']*2 + ['Block_8']*2 + ['Block_9']*2 + ['Block_10']*2 + ['Block_11']*2 + ['Block_12']*2 + ['Block_13']*2 + ['Block_14']*2 + ['Block_15']*2 + ['Block_16']*2 + ['Block_17']*2 + ['Block_18']*2 
-	ind_block_cr['Subj'] = subj[iteration] * 36
+	ind_block_cr['Subj'] = [subj[iteration]] * 36
 	ind_block_cr['CR'] = blk1_1[0] , blk1_1[1] , blk1_2[0] , blk1_2[1] , blk1_3[0], blk1_3[1],blk1_4[0] ,blk1_4[1] ,blk1_5[0] , blk1_5[1] , blk1_6[0] , blk1_6[1] ,blk2_1[0] , blk2_1[1] , blk2_2[0], blk2_2[1] ,blk2_3[0], blk2_3[1] , blk2_4[0] ,blk2_4[1] , blk2_5[0] , blk2_5[1], blk2_6[0] ,blk2_6[1] , blk3_1[0] ,blk3_1[1] , blk3_2[0] , blk3_2[1] , blk3_3[0], blk3_3[1] , blk3_4[0] ,blk3_4[1] , blk3_5[0] , blk3_5[1] , blk3_6[0] , blk3_6[1]
 
 	block_cr_long = pd.concat([block_cr_long, ind_block_cr])
@@ -445,16 +438,14 @@ phase_cr['SEM'] = [stats.sem(r_phase_cr.loc[0,:]),stats.sem(r_phase_cr.loc[1,:])
 block_cr['CR'] = [np.mean(r_block_cr.loc[0,:]),np.mean(r_block_cr.loc[1,:]),np.mean(r_block_cr.loc[2,:]),np.mean(r_block_cr.loc[3,:]),np.mean(r_block_cr.loc[4,:]),np.mean(r_block_cr.loc[5,:]),np.mean(r_block_cr.loc[6,:]),np.mean(r_block_cr.loc[7,:]),np.mean(r_block_cr.loc[8,:]),np.mean(r_block_cr.loc[9,:]),np.mean(r_block_cr.loc[10,:]),np.mean(r_block_cr.loc[11,:]),np.mean(r_block_cr.loc[12,:]),np.mean(r_block_cr.loc[13,:]),np.mean(r_block_cr.loc[14,:]),np.mean(r_block_cr.loc[15,:]),np.mean(r_block_cr.loc[16,:]),np.mean(r_block_cr.loc[17,:]),np.mean(r_block_cr.loc[18,:]),np.mean(r_block_cr.loc[19,:]),np.mean(r_block_cr.loc[20,:]),np.mean(r_block_cr.loc[21,:]),np.mean(r_block_cr.loc[22,:]),np.mean(r_block_cr.loc[23,:]),np.mean(r_block_cr.loc[24,:]),np.mean(r_block_cr.loc[25,:]),np.mean(r_block_cr.loc[26,:]),np.mean(r_block_cr.loc[27,:]),np.mean(r_block_cr.loc[28,:]),np.mean(r_block_cr.loc[29,:]),np.mean(r_block_cr.loc[30,:]),np.mean(r_block_cr.loc[31,:]),np.mean(r_block_cr.loc[32,:]),np.mean(r_block_cr.loc[33,:]),np.mean(r_block_cr.loc[34,:]),np.mean(r_block_cr.loc[35,:])]
 block_cr['SEM'] = [stats.sem(r_block_cr.loc[0,:]),stats.sem(r_block_cr.loc[1,:]),stats.sem(r_block_cr.loc[2,:]),stats.sem(r_block_cr.loc[3,:]),stats.sem(r_block_cr.loc[4,:]),stats.sem(r_block_cr.loc[5,:]),stats.sem(r_block_cr.loc[6,:]),stats.sem(r_block_cr.loc[7,:]),stats.sem(r_block_cr.loc[8,:]),stats.sem(r_block_cr.loc[9,:]),stats.sem(r_block_cr.loc[10,:]),stats.sem(r_block_cr.loc[11,:]),stats.sem(r_block_cr.loc[12,:]),stats.sem(r_block_cr.loc[13,:]),stats.sem(r_block_cr.loc[14,:]),stats.sem(r_block_cr.loc[15,:]),stats.sem(r_block_cr.loc[16,:]),stats.sem(r_block_cr.loc[17,:]),stats.sem(r_block_cr.loc[18,:]),stats.sem(r_block_cr.loc[19,:]),stats.sem(r_block_cr.loc[20,:]),stats.sem(r_block_cr.loc[21,:]),stats.sem(r_block_cr.loc[22,:]),stats.sem(r_block_cr.loc[23,:]),stats.sem(r_block_cr.loc[24,:]),stats.sem(r_block_cr.loc[25,:]),stats.sem(r_block_cr.loc[26,:]),stats.sem(r_block_cr.loc[27,:]),stats.sem(r_block_cr.loc[28,:]),stats.sem(r_block_cr.loc[29,:]),stats.sem(r_block_cr.loc[30,:]),stats.sem(r_block_cr.loc[31,:]),stats.sem(r_block_cr.loc[32,:]),stats.sem(r_block_cr.loc[33,:]),stats.sem(r_block_cr.loc[34,:]),stats.sem(r_block_cr.loc[35,:])]
 
-#ok right 
-#byphase = sns.barplot(data=phase_cr,x='Phase',y='CR',hue='Condition',estimator=np.mean)
-#plt.show(byphase)
-
-#byblock = sns.barplot(data=ind_block_cr,x='Block',y='CR',hue='Condition')
-#plt.show(byblock)
-phase_cr.to_csv('%s/graphing/ggbp.csv'%(data_dir),sep=',')
-block_cr.to_csv('%s/graphing/ggbb.csv'%(data_dir),sep=',')
-#if its not working, then check non-responses
+#only save the output if its a complete analysis
+if args.subj == 'all':
 
 
+	phase_cr.to_csv('%s/graphing/ggbp.csv'%(data_dir),sep=',')
+	block_cr.to_csv('%s/graphing/ggbb.csv'%(data_dir),sep=',')
+	#if its not working, then check non-responses
+	phase_cr_long.to_csv('%s/graphing/ggbp_long.csv'%(data_dir),sep=',')
+	block_cr_long.to_csv('%s/graphing/ggbb_long.csv'%(data_dir),sep=',')
 
 

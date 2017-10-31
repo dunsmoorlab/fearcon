@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 import pandas as pd
-
+from toolz import interleave
 
 #to do a GLM in FSL, need 3 column matrix for each condition in each run, in the format of:
 #onset, duration, parametric modulation
@@ -11,7 +11,7 @@ import pandas as pd
 #set arguments
 parser = argparse.ArgumentParser(description='Function arguments')
 #set the subject argument as a string so that it can take arguments like '1' or 'all'
-parser.add_argument('-s','--subj', help='Subject number', default=00, type=str)
+parser.add_argument('-s','--subj', nargs = '+', help='Subject number', default=00, type=str)
 args = parser.parse_args()
 
 #point to the data direct
@@ -20,38 +20,18 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 #set numpy print options
 np.set_printoptions(precision=8)
 
-#handle the subjects arg (all or one)
-if args.subj == 'all':
-	subj = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
-	iterations = len(subj)
-#if its not 'all' then we need to convert it into an int
-else:
-	subj = [int(args.subj)]
-	iterations = 1
 
-for iteration in range(0,iterations):
+for sub in args.subj:
 	#have to do all experimental runs first
-	meta = pd.read_csv(data_dir + os.sep + "Sub{0:0=3d}".format(subj[iteration]) + os.sep + 'behavior' + os.sep + "Sub{0:0=3d}_elog.csv".format(subj[iteration]))
+	SUBJ = 'Sub00%s'%(sub)
 
+	meta = pd.read_csv(data_dir + os.sep + SUBJ + os.sep + 'behavior' + os.sep + '%s_elog.csv'%(SUBJ))
 
-	SUBJ = 'Sub{0:0=3d}'.format(subj[iteration])
 	onsets = '/%s/%s/model/GLM/onsets'%(data_dir,SUBJ)
-	#make the directories to store the files
-	run_folders = [
-		onsets,
-		'%s/run001'%(onsets),
-		'%s/run002'%(onsets),
-		'%s/run003'%(onsets)
-		]
 
-	#if not os.path.isdir(onsets):
-	#	for i, folder in enumerate(run_folders):
-	#		os.mkdir(run_folders[i])
-
-	{ os.mkdir(run_folders[i]) for i, folder in enumerate(run_folders) if not os.path.isdir(run_folders[i]) }
-
-	#then load in localizer meta
-	############################
+	#########################
+	#baseline
+	#########################
 
 	base_meta = meta[meta.phase == 'baseline']
 	base_start = base_meta['InitialITI.OnsetTime'][0]
@@ -87,8 +67,9 @@ for iteration in range(0,iterations):
 	np.savetxt('%s/%s/model/GLM/onsets/run001/csmin.txt'%(data_dir,SUBJ), base_CSmin, fmt='%.8e', delimiter='\t')
 	
 
-	#do it all again for fear conditioning
-
+	#########################
+	#fear conditioning
+	#########################
 	fear_meta = meta[meta.phase == 'fearconditioning']
 	fear_start = fear_meta['InitialITI.OnsetTime'][48]
 	
@@ -123,7 +104,9 @@ for iteration in range(0,iterations):
 	np.savetxt('%s/%s/model/GLM/onsets/run002/csplus.txt'%(data_dir,SUBJ), fear_CSplus, fmt='%.8e', delimiter='\t')
 	np.savetxt('%s/%s/model/GLM/onsets/run002/csmin.txt'%(data_dir,SUBJ), fear_CSmin, fmt='%.8e', delimiter='\t')
 
-
+	#########################
+	#extinciton
+	#########################
 	#do the same for extinction, but also undo the dumb row expansion that e-prime does with the scene ITIs
 	phase3_stims = pd.Series(0)
 	phase3_unique_loc = pd.Series(0)
@@ -170,6 +153,82 @@ for iteration in range(0,iterations):
 	#save them
 	np.savetxt('%s/%s/model/GLM/onsets/run003/csplus.txt'%(data_dir,SUBJ), ext_CSplus, fmt='%.8e', delimiter='\t')
 	np.savetxt('%s/%s/model/GLM/onsets/run003/csmin.txt'%(data_dir,SUBJ), ext_CSmin, fmt='%.8e', delimiter='\t')
+
+	
+	#now code the scene events
+	ext_objects = pd.DataFrame(np.concatenate([ext_CSplus, ext_CSmin])).sort_values(0)
+	ext_objects.index = list(range(0,48))
+
+	#set up the data frame
+	ext_scenes = pd.DataFrame([],columns=['Onset','Duration','PM'])
+
+	#calculate the onsets
+	ext_scenes.Onset = [(onset + ext_objects[1][i]) for i, onset in enumerate(ext_objects[0])] 
+
+	#and durations
+	scene_durations = [(ext_objects[0][i+1] - onset) for i, onset in enumerate(ext_scenes.Onset) if i < 47]
+
+	#just using the mean ITI duration for the last one
+	scene_durations.append(np.mean(scene_durations))
+
+	#save the durations
+	ext_scenes.Duration = scene_durations
+
+	#set PM to 1
+	ext_scenes.PM = [1] * len(ext_scenes)
+
+	#convert back to numpy array
+	ext_scenes = np.array(ext_scenes)
+
+	#save it
+	np.savetxt('%s/%s/model/GLM/onsets/run003/context_tag.txt'%(data_dir,SUBJ), ext_scenes, fmt='%.8e', delimiter='\t')
+
+	
+	#########################
+	#extinciton recall
+	#########################
+	er_meta = meta[meta.phase == 'extinctionRecall']
+	er_start = er_meta['InitialITI.OnsetTime'][er_meta['InitialITI.OnsetTime'].index[1]]
+	
+	er_CSplus = pd.DataFrame([],columns=['Onset','Duration','PM'])
+	er_CSmin = pd.DataFrame([],columns=['Onset','Duration','PM'])
+	er = pd.DataFrame([],columns=['Onset','Duration','PM'])
+
+
+	#Grab the onset times for everything
+	er_CSplus.Onset = er_meta['stim.OnsetTime'][er_meta.cstype == 'CS+'] - er_start
+	er_CSmin.Onset = er_meta['stim.OnsetTime'][er_meta.cstype == 'CS-'] - er_start
+	er.Onset = er_meta['stim.OnsetTime'] - er_start
+
+	#then get the durations
+	er_CSplus.Duration = er_meta['stim.Duration'][er_meta.cstype == 'CS+']
+	er_CSmin.Duration = er_meta['stim.Duration'][er_meta.cstype == 'CS-']
+	er.Duration = er_meta['stim.Duration']
+
+	#set the parametric modulation, which for now is just going to be 1 for everything until I learn what that means
+	er_CSplus.PM = [1] * len(er_CSplus)
+	er_CSmin.PM = [1] * len(er_CSmin)
+	er.PM = [1] * len(er)
+
+	#convert onset and duration to seconds from miliseconds
+	er_CSplus.Onset = er_CSplus.Onset / 1000
+	er_CSmin.Onset = er_CSmin.Onset / 1000
+	er.Onset = er.Onset / 1000
+
+	er_CSplus.Duration = er_CSplus.Duration / 1000
+	er_CSmin.Duration = er_CSmin.Duration / 1000
+	er.Duration = er.Duration / 1000
+
+
+	#make them into numpy arrarys that do wonderful scientific notation
+	er_CSplus = np.array(er_CSplus)
+	er_CSmin = np.array(er_CSmin)
+	er = np.array(er)
+
+	#save them
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csplus.txt'%(data_dir,SUBJ), er_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csmin.txt'%(data_dir,SUBJ), er_CSmin, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run004/all_stim.txt'%(data_dir,SUBJ), er, fmt='%.8e', delimiter='\t')
 
 
 	print('%s GLM timing files created'%(SUBJ))

@@ -170,7 +170,7 @@ if args.mask == True:
 	#maybe also want to play around with frac
 	#ALSO, may want to look at adding in Lateral occipital cortex (LOC), resulting in a joint LOC_VT mask á la ComCon
 	if 'VTC_mask.nii.gz' not in os.listdir(mask):
-		
+		print('Generating VTC mask')
 		#left hemishpere
 		lhd1_mask = Popen(['mri_label2vol', '--subject', '%sfs'%(SUBJ),
 		'--label', '%slh.fusiform.label'%(label),
@@ -205,12 +205,43 @@ if args.mask == True:
 		print('Combining hemispheres via fslmaths...')
 		os.system('fslmaths %slh_VTC.nii.gz -add %srh_VTC.nii.gz -bin %sVTC_mask.nii.gz'%(mask,mask,mask))
 
-	else:
-		print('Mask already exists')
+#	else if 'VTC_mask.nii.gz' in os.listdir(mask):
+#		print('VTC mask already exists')
 
-		#get rid of the hemispheres bc we don't need those
-		#os.remove('%slh_VTC.nii.gz'%(mask))
-		#os.remove('%srh_VTC.nii.gz'%(mask))
+	if 'LOC_mask.nii.gz' not in os.listdir(mask):
+		print('Generating LOC mask')
+
+		lhd2_mask = Popen(['mri_label2vol', '--subject', '%sfs'%(SUBJ),
+		'--label', '%slh.lateraloccipital.label'%(label),
+		'--temp', '%srefvol.nii.gz'%(bold),
+		'--reg', '%sRegMat.dat'%(registration),
+		'--proj', 'frac', '0', '1', '.1',
+		'--fillthresh', '.3',
+		'--hemi', 'lh',
+		'--o', '%slh_LOC.nii.gz'%(mask)],
+		env=env)
+		lhd2_mask.wait()
+		
+		rhd2_mask = Popen(['mri_label2vol', '--subject', '%sfs'%(SUBJ),
+		'--label', '%srh.lateraloccipital.label'%(label),
+		'--temp', '%srefvol.nii.gz'%(bold),
+		'--reg', '%sRegMat.dat'%(registration),
+		'--proj', 'frac', '0', '1', '.1',
+		'--fillthresh', '.3',
+		'--hemi', 'rh',
+		'--o', '%srh_LOC.nii.gz'%(mask)],
+		env=env)
+		rhd2_mask.wait()
+
+		print('Combining hemispheres via fslmaths...')
+		os.system('fslmaths %slh_LOC.nii.gz -add %srh_LOC.nii.gz -bin %sLOC_mask.nii.gz'%(mask,mask,mask))
+
+	if 'LOC_VTC_mask.nii.gz' not in os.listdir(mask):
+		print('Combining LOC & VTC masks')
+		os.system('fslmaths %sLOC_mask.nii.gz -add %sVTC_mask.nii.gz -bin %sLOC_VTC_mask.nii.gz'%(mask,mask,mask))
+
+	else:
+		print('All masks already exist')
 
 #run motion correction
 if args.motion_correct == True:

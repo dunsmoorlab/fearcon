@@ -83,9 +83,11 @@ os.mkdir(MVPA)
 
 onsets = GLM + '/onsets'
 labels = MVPA + '/labels'
+toolbox = MVPA + '/toolbox'
 
 os.mkdir(onsets)
 os.mkdir(labels)
+os.mkdir(toolbox)
 
 run1o = onsets + '/run001'
 run2o = onsets + '/run002'
