@@ -15,7 +15,7 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
 fsfdir='%s/fsfs'%(data_dir)
 
 # Get all the paths!  Note, this won't do anything special to omit bad subjects
-subdirs = glob("%s/Sub[0-9][0-9][0-9]/bold/day1/run0[0-9][0-9]"%(data_dir))
+subdirs = glob("%s/Sub[0-9][0-9][0-9]/bold/day2/run0[0-4][0-4]"%(data_dir))
 
 for dir in list(subdirs):
   splitdir = dir.split('/')
@@ -32,7 +32,7 @@ for dir in list(subdirs):
 
   #put NVOLS in here if needed
   replacements = {'SUBJ':SUBJ, 'PHASE':PHASE}
-  with open("%s/template_lev1_run3_nl.fsf"%(fsfdir)) as infile: 
+  with open("%s/template_lev1_run4_nl.fsf"%(fsfdir)) as infile: 
     with open("%s/lev1/design_%s_%s.fsf"%(fsfdir, SUBJ, PHASE), 'w') as outfile:
         for line in infile:
           # Note, since the video, I've changed "iteritems" to "items"

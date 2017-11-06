@@ -20,8 +20,12 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 #set numpy print options
 np.set_printoptions(precision=8)
 
+if args.subj == ['all']:
+	sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+else:
+	sub_args = args.subj
 
-for sub in args.subj:
+for sub in sub_args:
 	#have to do all experimental runs first
 	SUBJ = 'Sub00%s'%(sub)
 
@@ -225,10 +229,23 @@ for sub in args.subj:
 	er_CSmin = np.array(er_CSmin)
 	er = np.array(er)
 
+	early_er_CSplus = er_CSplus[0:4, :]
+	early_er_CSmin = er_CSmin[0:4, :]
+
+	late_er_CSplus = er_CSplus[4:, :]
+	late_er_CSmin = er_CSmin[4:, :]
+
 	#save them
 	np.savetxt('%s/%s/model/GLM/onsets/run004/csplus.txt'%(data_dir,SUBJ), er_CSplus, fmt='%.8e', delimiter='\t')
 	np.savetxt('%s/%s/model/GLM/onsets/run004/csmin.txt'%(data_dir,SUBJ), er_CSmin, fmt='%.8e', delimiter='\t')
 	np.savetxt('%s/%s/model/GLM/onsets/run004/all_stim.txt'%(data_dir,SUBJ), er, fmt='%.8e', delimiter='\t')
+
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csplus_early.txt'%(data_dir,SUBJ), early_er_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csmin_early.txt'%(data_dir,SUBJ), early_er_CSmin, fmt='%.8e', delimiter='\t')
+
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csplus_late.txt'%(data_dir,SUBJ), late_er_CSplus, fmt='%.8e', delimiter='\t')
+	np.savetxt('%s/%s/model/GLM/onsets/run004/csmin_late.txt'%(data_dir,SUBJ), late_er_CSmin, fmt='%.8e', delimiter='\t')
+
 
 
 	print('%s GLM timing files created'%(SUBJ))

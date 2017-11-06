@@ -2,6 +2,7 @@ import os
 import argparse
 import numpy as np
 import pandas as pd
+from math import sqrt
 
 #set arguments
 parser = argparse.ArgumentParser(description='Function arguments')
@@ -46,13 +47,12 @@ for sub in args.subj:
 
 		trail_dat = sub_scr.loc
 
-		sub_out.t2p[i] = sub_scr.t2pValue.loc[sub_scr.Event == trial,].loc[sub_scr.Analysis == '%ssec'%(sub_out.Duration[i]),].values[0]
+		sub_out.loc[i,'t2p'] = sub_scr.t2pValue.loc[sub_scr.Event == trial,].loc[sub_scr.Analysis == '%ssec'%(sub_out.Duration[i]),].values[0]
 
 		#(sub_scr[sub_scr.Event == trial][sub_scr.Analysis == '%ssec'%(sub_out.Duration[i])])
 
+	for i, scr in enumerate(sub_out.t2p):
+		sub_out.loc[i,'t2p'] = sqrt(scr)
 
 
-
-
-
-
+	sub_out.to_csv('%s/%s/SCR/%s_analyzed_scr.csv'%(data_dir,SUBJ,phase),sep=',')

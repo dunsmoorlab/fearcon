@@ -12,7 +12,7 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
 
 parser = argparse.ArgumentParser(description='Function arguments')
 
-parser.add_argument('-s', '--subj', nargs='+', help='Subject Number', default=0, type=int)
+parser.add_argument('-s', '--subj', nargs='+', help='Subject Number', default=0, type=str)
 parser.add_argument('-o', '--overwrite', help='Overwrite output html', default=False, type=bool)
 
 args=parser.parse_args()
@@ -26,12 +26,18 @@ if args.overwrite == True:
 	os.system('rm %s'%(outhtml))
 	os.system('rm %s'%(out_bad_bold_list))
 
-for subj in args.subj:
+if args.subj == ['all']:
+	sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+else:
+	sub_args = args.subj
+
+
+for subj in sub_args:
 	
 	SUBJ = 'Sub00%s'%(subj)
 	
 	#collect all the runs
-	bold_files = glob('%s/%s/bold/day1/run00[1-9]/run00[1-9].nii.gz'%(data_dir,SUBJ))
+	bold_files = glob('%s/%s/bold/day[1-2]/run00[1-7]/run00[1-7].nii.gz'%(data_dir,SUBJ))
 
 
 
