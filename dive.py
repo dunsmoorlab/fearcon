@@ -33,7 +33,14 @@ sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 
 
 #make some results structures
 mean_15 = pd.DataFrame([],columns=['Subject','extinction','baseline','fear_conditioning','extinction_recall'])
-mean_15.Subject = sub_args 
+mean_15.Subject = sub_args
+
+#results for the entire phase
+base_out = pd.DataFrame([],columns = sub_args)
+fear_out = pd.DataFrame([],columns = sub_args)
+ext_out = pd.DataFrame([],columns = sub_args)
+er_out = pd.DataFrame([],columns = sub_args)
+
 
 csplus_out = pd.DataFrame([],columns=['CS','Subject','Phase','-4','-2','0','2'])
 csplus_out.Phase = ['extinction','baseline','fear_conditioning','extinction_recall'] * len(sub_args)
@@ -124,6 +131,11 @@ for sub in sub_args:
 	for phase in clf_res:
 		mean_15.loc[mean_15.Subject==sub, phase] = clf_res[phase][0:15].mean()
 
+	#collect the raw results for each entire phase
+	base_out[sub] = clf_res['baseline']
+	fear_out[sub] = clf_res['fear_conditioning']
+	ext_out[sub] = clf_res['extinction']
+	er_out[sub] = clf_res['extinction_recall']
 
 	#load in the TR labels
 	test_labels = { phase: np.load('%s/%s/model/MVPA/labels/%s_labels.npy'%(data_dir,SUBJ,phase)) for phase in test_data }
@@ -184,9 +196,9 @@ for sub in sub_args:
 			comb_out['0'][sub][phase] = trial[2]
 			comb_out['2'][sub][phase] = trial[3]
 
-
+#collect the scene evidence for the time period around a stimulus
 event_out = pd.DataFrame([], columns = ['Phase','CS','TR','Mean','SEM'])
-event_out.Phase = np.repeat(['extinction','baseline','fear_conditioning','extinction_recall'],8) 
+event_out.Phase = np.repeat(test_runs,8) 
 event_out.CS = np.tile(np.concatenate([np.repeat('CS+',4),np.repeat('CS-',4)]),4)
 event_out.TR = np.tile(['-4','-2','0','2'],8)
 event_out = event_out.set_index(['CS','Phase','TR'])
@@ -200,9 +212,10 @@ for phase in test_runs:
 
 event_out.to_csv('%s/graphing/sklearn_dive/event_cs_scene.csv'%(data_dir), sep=',')
 
+#do the same thing collapsed across condition
 tr = ['-4','-2','0','2']
 all_out = pd.DataFrame([], columns= ['Phase','TR','Mean','SEM'])
-all_out.Phase = np.repeat(['extinction','baseline','fear_conditioning','extinction_recall'],4) 
+all_out.Phase = np.repeat(test_runs,4) 
 all_out.TR = np.tile(tr,4)
 all_out = all_out.set_index(['Phase','TR'])
 
@@ -215,7 +228,7 @@ all_out.to_csv('%s/graphing/sklearn_dive/event_scene.csv'%(data_dir), sep=',')
 
 
 Rgraph = pd.DataFrame([], columns = ['Phase','Mean','SEM'])
-Rgraph.Phase = ['extinction','baseline','fear_conditioning','extinction_recall']
+Rgraph.Phase = test_runs
 #THIS RIGHT HERE IS WHAT PREVENTS ALL THE COPY WARNINGS
 #ITS ALL ABOUT THE INDICES BABY
 Rgraph = Rgraph.set_index('Phase')
@@ -229,9 +242,19 @@ Rgraph.to_csv('%s/graphing/sklearn_dive/evidence_15tr.csv'%(data_dir), sep=',')
 mean_15.to_csv('%s/graphing/sklearn_dive/subject_evidence_15tr.csv'%(data_dir), sep=',')
 
 
+phase_out = pd.DataFrame([],columns=test_runs)
 
+phase_out.base_mean = base_out.mean(axis=1)
+phase_out.base_sem = base_out.sem(axis=1)
 
+phase_out.fear_mean = fear_out.mean(axis=1)
+phase_out.fear_sem = fear_out.sem(axis=1)
 
+phase_out.ext_mean = ext_out.mean(axis=1)
+phase_out.ext_sem = base_out.sem(axis=1)
+
+phase_out.er_mean = base_out.mean(axis=1)
+phase_out.er_sem = base_out.sem(axis=1)
 
 
 
