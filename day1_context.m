@@ -5,10 +5,11 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/';
 
 
 %uncomment this for easy debugging
-%SUBJ = 'Sub001'
-%phase = 'baseline'
-%mask = 'LOC_VTC'
-%thresh = 0.01
+SUBJ = 'Sub001'
+phase = 'baseline'
+mask = 'LOC_VTC'
+cat = 'scene'
+thresh = 0.01
 
 %set subject for each iteration
 SUBJ = strcat('Sub00',sub)

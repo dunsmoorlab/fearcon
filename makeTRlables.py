@@ -15,7 +15,7 @@ from fc_config import LocStims
 parser = argparse.ArgumentParser(description='Function arguments')
 
 #add arguments
-parser.add_argument('-s', '--subj', nargs='+', help='Subject Number', default=0, type=int)
+parser.add_argument('-s', '--subj', nargs='+', help='Subject Number', default=0, type=str)
 
 #parser.add_argument('-ph', '--label', help='Phases to generate labels for, as in, "label these!"', default='', type=str)
 parser.add_argument('-l', '--label', nargs='+', help='Phases to generate labels for, as in, "label these!"', default='', type=str)
@@ -30,16 +30,26 @@ if platform == 'linux':
 else:
 	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
 
-for sub in args.subj:
-#identify the subject
-	SUBJ = 'Sub00%s'%(sub)
+if args.subj == ['all']:
+	sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+else:
+	sub_args = args.subj
+
+for sub in sub_args:
+	sub = int(sub)
+	SUBJ = 'Sub{0:0=3d}'.format(sub)
 
 	labels = '%s/%s/model/MVPA/labels'%(data_dir, SUBJ)
 	if not os.path.isdir(labels):
 		os.mkdir(labels)
 
 	#need to set a phase == all case
-	for phase in args.label:
+	if args.label == ['all']:
+		label_args = ['baseline','fear_conditioning','extinction','extinction_recall','memory_run_1','memory_run_2','memory_run_3','localizer_1','localizer_2']
+	else:
+		label_args = args.label
+
+	for phase in label_args:
 
 		runtype = day2phase[phase]
 

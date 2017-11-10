@@ -58,7 +58,6 @@ else:
 	sub_args = args.subj
 
 for sub in sub_args:
-#tell bash(and python) which subject to work with
 	sub = int(sub)
 	SUBJ = 'Sub{0:0=3d}'.format(sub)
 

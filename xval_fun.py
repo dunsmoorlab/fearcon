@@ -105,9 +105,11 @@ for sub in sub_args:
 			for i, label in enumerate(nr4_labels[phase]):
 				if label == 'indoor' or label == 'outdoor':
 					nr4_labels[phase][i] = 'scene'
+				else:
+					nr4_labels[phase][i] = 'not'
 	
 	#manually set the labels
-	nr4_names = ['animal','tool','scene','scrambled']
+	#nr4_names = ['animal','tool','scene','scrambled']
 	
 	#combine runs for cross validation
 	nr4_data_reduced = np.concatenate([nr4_data['localizer_1'],nr4_data['localizer_2']])
@@ -162,7 +164,7 @@ out = pd.DataFrame([], columns=['Mean','SEM'])
 out.Mean = mean_out.mean()
 out.SEM = mean_out.sem()
 
-out.to_csv('%s/graphing/sklearn_xval/%s_%s_iter.csv'%(data_dir,args.classifier,args.feature_selection), sep=',')
+out.to_csv('%s/graphing/sklearn_xval/%s_%s_iter2.csv'%(data_dir,args.classifier,args.feature_selection), sep=',')
 
 
 #print('%s nr4 cv score = %s'%(SUBJ,nr4_fs_cv_res))

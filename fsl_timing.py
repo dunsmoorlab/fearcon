@@ -249,34 +249,3 @@ for sub in sub_args:
 
 
 	print('%s GLM timing files created'%(SUBJ))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	#base_CSplus.to_csv('cond001.txt', header=None, index=None, sep=' ', mode='a')
-	#fucking figure out how to do 8 decimal points with scientific notation idfk this is really frustrating
