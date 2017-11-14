@@ -59,6 +59,8 @@ comb_out.Phase = ['extinction','baseline','fear_conditioning','extinction_recall
 comb_out.Subject = np.repeat(sub_args, 4)
 comb_out = comb_out.set_index(['Subject','Phase'])
 
+er_4tr = pd.DataFrame([], columns = sub_args)
+
 for sub in sub_args:
 	SUBJ = 'Sub{0:0=3d}'.format(sub)
 
@@ -242,7 +244,7 @@ Rgraph.to_csv('%s/graphing/sklearn_dive/evidence_15tr.csv'%(data_dir), sep=',')
 mean_15.to_csv('%s/graphing/sklearn_dive/subject_evidence_15tr.csv'%(data_dir), sep=',')
 
 
-phase_out = pd.DataFrame([],columns=test_runs)
+phase_out = pd.DataFrame([],columns=['base_mean','base_sem','fear_mean','fear_sem','ext_mean','ext_sem','er_mean','er_sem'])
 
 phase_out.base_mean = base_out.mean(axis=1)
 phase_out.base_sem = base_out.sem(axis=1)
@@ -251,10 +253,12 @@ phase_out.fear_mean = fear_out.mean(axis=1)
 phase_out.fear_sem = fear_out.sem(axis=1)
 
 phase_out.ext_mean = ext_out.mean(axis=1)
-phase_out.ext_sem = base_out.sem(axis=1)
+phase_out.ext_sem = ext_out.sem(axis=1)
 
-phase_out.er_mean = base_out.mean(axis=1)
-phase_out.er_sem = base_out.sem(axis=1)
+phase_out.er_mean = er_out.mean(axis=1)
+phase_out.er_sem = er_out.sem(axis=1)
 
+phase_out.to_csv('%s/graphing/sklearn_dive/evidence_by_tr.csv'%(data_dir), sep=',')
 
+er_out.to_csv('%s/graphing/sklearn_dive/er_scene_evidence.csv'%(data_dir), sep=',')
 

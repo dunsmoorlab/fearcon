@@ -125,6 +125,16 @@ for iteration in range(0,iterations):
 	day1_condition[0:96] = condition[0:96]
 	day1_condition[96:144] = condition[phase3_unique_loc]
 
+	#fix my big ol mistake
+	#if meta.ExperimentName[1][0] == 'T':
+	#	for con in meta.cstype[phase5].index:
+	#		
+	#		if meta.condition[con] == 'animal':
+	#			condition.loc[con] = 'CS-'
+	#		
+	#		if meta.condition[con] == 'tool':
+	#			condition.loc[con] = 'CS+'
+
 	#now lets look at their responses
 	#set up some variables to translate raw responses into meaning
 	correct_rejection = np.zeros(0)
