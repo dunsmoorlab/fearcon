@@ -34,7 +34,7 @@ else:
 
 for subj in sub_args:
 	
-	SUBJ = 'Sub00%s'%(subj)
+	SUBJ = 'Sub{0:0=3d}'.format(subj)
 	
 	#collect all the runs
 	bold_files = glob('%s/%s/bold/day[1-2]/run00[1-7]/run00[1-7].nii.gz'%(data_dir,SUBJ))

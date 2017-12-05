@@ -8,6 +8,7 @@ from glob import glob
 
 # Set this to the directory all of the sub### directories live in
 data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
+run = 4
 
 # Set this to the directory where you'll dump all the fsf files
 # May want to make it a separate directory, because you can delete them all o
@@ -15,7 +16,7 @@ data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
 fsfdir='%s/fsfs'%(data_dir)
 
 # Get all the paths!  Note, this won't do anything special to omit bad subjects
-subdirs = glob("%s/Sub[0-9][0-9][0-9]/bold/day2/run0[0-4][0-4]"%(data_dir))
+subdirs = glob("%s/Sub[0-9][0-9][0-9]/bold/day[1-2]/run00[%s]"%(data_dir,run))
 
 for dir in list(subdirs):
   splitdir = dir.split('/')
@@ -32,7 +33,7 @@ for dir in list(subdirs):
 
   #put NVOLS in here if needed
   replacements = {'SUBJ':SUBJ, 'PHASE':PHASE}
-  with open("%s/template_lev1_run4_nl.fsf"%(fsfdir)) as infile: 
+  with open("%s/template_lev1_run%s_nl.fsf"%(fsfdir,run)) as infile: 
     with open("%s/lev1/design_%s_%s.fsf"%(fsfdir, SUBJ, PHASE), 'w') as outfile:
         for line in infile:
           # Note, since the video, I've changed "iteritems" to "items"

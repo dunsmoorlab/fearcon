@@ -41,6 +41,12 @@ fear_out = pd.DataFrame([],columns = sub_args)
 ext_out = pd.DataFrame([],columns = sub_args)
 er_out = pd.DataFrame([],columns = sub_args)
 
+#results for jsut the 4tr window around a stimulus
+base_4tr = pd.DataFrame([],columns = sub_args)
+fear_4tr = pd.DataFrame([],columns = sub_args)
+ext_4tr = pd.DataFrame([],columns = sub_args)
+er_4tr = pd.DataFrame([], columns = sub_args)
+
 
 csplus_out = pd.DataFrame([],columns=['CS','Subject','Phase','-4','-2','0','2'])
 csplus_out.Phase = ['extinction','baseline','fear_conditioning','extinction_recall'] * len(sub_args)
@@ -59,11 +65,10 @@ comb_out.Phase = ['extinction','baseline','fear_conditioning','extinction_recall
 comb_out.Subject = np.repeat(sub_args, 4)
 comb_out = comb_out.set_index(['Subject','Phase'])
 
-er_4tr = pd.DataFrame([], columns = sub_args)
 
 for sub in sub_args:
 	SUBJ = 'Sub{0:0=3d}'.format(sub)
-
+	print('%s taking a dive'%(SUBJ))
 	#start with the localizer runs
 	loc_runs = ['localizer_1','localizer_2']
 	#loading in data
@@ -141,7 +146,6 @@ for sub in sub_args:
 
 	#load in the TR labels
 	test_labels = { phase: np.load('%s/%s/model/MVPA/labels/%s_labels.npy'%(data_dir,SUBJ,phase)) for phase in test_data }
-
 	#using the TR labels, create a temporal mask with 1s in a 4TR window around the start of a CS+ stim, 2 for CS-
 	for phase in test_labels:
 		if phase == 'extinction':
@@ -172,6 +176,7 @@ for sub in sub_args:
 	csplus_res = { phase: clf_res[phase][np.where(test_labels[phase] == '1')[0]] for phase in test_labels }
 	csmin_res = { phase: clf_res[phase][np.where(test_labels[phase] == '2')[0]] for phase in test_labels }
 
+	
 	#and transform them to be one trial to a row
 	csplus_res = {phase: np.reshape(csplus_res[phase], (-1,4)) for phase in csplus_res}
 	csmin_res = {phase: np.reshape(csmin_res[phase], (-1,4)) for phase in csmin_res}
@@ -197,6 +202,21 @@ for sub in sub_args:
 			comb_out['-2'][sub][phase] = trial[1]
 			comb_out['0'][sub][phase] = trial[2]
 			comb_out['2'][sub][phase] = trial[3]
+
+	
+	#create an index of all the 4tr windows around all trials regardelss of condition
+	event_index = { phase: np.sort( np.concatenate( (np.where(test_labels[phase] == '1')[0], np.where(test_labels[phase] == '2')[0]) ) ) for phase in test_labels}
+
+	#then get those bad boys
+	in_order_res = { phase: clf_res[phase][event_index[phase]] for phase in event_index }
+	#and reshape them so they can be analyzed correctly
+	in_order_res = { phase: np.reshape(in_order_res[phase], (-1,4)) for phase in in_order_res }
+	#lets go ahead and just send out the mean, can come back and change this if we want
+	base_4tr[sub] = in_order_res['baseline'].mean(axis=1)
+	fear_4tr[sub] = in_order_res['fear_conditioning'].mean(axis=1)
+	ext_4tr[sub] = in_order_res['extinction'].mean(axis=1)
+	er_4tr[sub] = in_order_res['extinction_recall'].mean(axis=1)
+
 
 #collect the scene evidence for the time period around a stimulus
 event_out = pd.DataFrame([], columns = ['Phase','CS','TR','Mean','SEM'])
@@ -262,3 +282,4 @@ phase_out.to_csv('%s/graphing/sklearn_dive/evidence_by_tr.csv'%(data_dir), sep='
 
 er_out.to_csv('%s/graphing/sklearn_dive/er_scene_evidence.csv'%(data_dir), sep=',')
 
+er_4tr.to_csv('%s/graphing/sklearn_dive/er_event_scene_evidence.csv'%(data_dir), sep=',')

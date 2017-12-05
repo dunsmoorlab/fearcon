@@ -14,15 +14,20 @@ args = parser.parse_args()
 #point to the data direct
 data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 
+if args.subj == ['all']:
+	sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+else:
+	sub_args = args.subj
+
 if args.phase == 'er':
 	phase = 'extinction_recall'
 
 #goal of this script is to appropriately collapse 3 different Autonomate analyses (5s, 4.5s, 4s) for each subject
 scr_meta = pd.read_csv('%s/SCR_Analyzed/%s_full_batch.txt'%(data_dir,phase), delimiter='\t')
 
-for sub in args.subj:
+for sub in sub_args:
 
-	SUBJ = 'Sub00%s'%(sub)
+	SUBJ = 'Sub{0:0=3d}'.format(sub)
 
 	if args.phase == 'er':
 		sphase = '%s_day2ER'%(SUBJ)

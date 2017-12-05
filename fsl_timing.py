@@ -27,7 +27,7 @@ else:
 
 for sub in sub_args:
 	#have to do all experimental runs first
-	SUBJ = 'Sub00%s'%(sub)
+	SUBJ = 'Sub{0:0=3d}'.format(sub)
 
 	meta = pd.read_csv(data_dir + os.sep + SUBJ + os.sep + 'behavior' + os.sep + '%s_elog.csv'%(SUBJ))
 
