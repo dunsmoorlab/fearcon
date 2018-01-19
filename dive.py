@@ -20,7 +20,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 #import the local config file
 from fc_config import run_key
-from fc_config import mvpa_prepped
+from fc_config import mvpa_prepped, dataz
 
 #import function to plot confusion matrices
 from cf_mat_plot import plot_confusion_matrix
@@ -72,7 +72,7 @@ for sub in sub_args:
 	#start with the localizer runs
 	loc_runs = ['localizer_1','localizer_2']
 	#loading in data
-	loc_data = { phase: np.load('%s/%s/bold/%s'%(data_dir,SUBJ,mvpa_prepped[phase])) for phase in loc_runs }
+	loc_data = { phase: np.load('%s/%s/bold/%s'%(data_dir,SUBJ,mvpa_prepped[phase]))[dataz] for phase in loc_runs }
 	#and labels
 	loc_labels = { phase: np.load('%s/%s/model/MVPA/labels/%s_labels.npy'%(data_dir,SUBJ,phase)) for phase in loc_runs }
 
@@ -125,7 +125,7 @@ for sub in sub_args:
 	#now load in the data to test on
 	test_runs = ['extinction','baseline','fear_conditioning','extinction_recall']
 	#read numpy arrays
-	test_data = { phase: np.load('%s/%s/bold/%s'%(data_dir,SUBJ,mvpa_prepped[phase])) for phase in test_runs }
+	test_data = { phase: np.load('%s/%s/bold/%s'%(data_dir,SUBJ,mvpa_prepped[phase]))[dataz] for phase in test_runs }
 
 	#shift test data over for HDR
 	test_data = { phase: test_data[phase][hdr_shift:-end_shift] for phase in test_data }
@@ -151,10 +151,10 @@ for sub in sub_args:
 		if phase == 'extinction':
 			for i, label in enumerate(test_labels[phase]):
 				if label == 'CS+':
-					if test_labels[phase][i-1] == 'scene':
+					if test_labels[phase][i-1] == 'scene' or test_labels[phase][i-1] == 'rest':
 						test_labels[phase][i-2:i+2] = 1
 				if label == 'CS-':
-					if test_labels[phase][i-1] == 'scene':
+					if test_labels[phase][i-1] == 'scene' or test_labels[phase][i-1] == 'rest':
 						test_labels[phase][i-2:i+2] = 2
 		else:
 			for i, label in enumerate(test_labels[phase]):

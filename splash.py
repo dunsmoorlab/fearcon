@@ -22,8 +22,9 @@ from subprocess import Popen, PIPE
 
 
 #import the local config file
-from fc_config import run_key
-from fc_config import phase2location
+from fc_config import subj_dir, data_dir
+from fc_config import get_sub_args
+from fc_config import phase2location, mvpa_prepped, run_key
 
 #build the python arg_parser
 parser = argparse.ArgumentParser(description='Function arguments')
@@ -38,22 +39,14 @@ parser.add_argument('-m', '--mask', help='Generate masks using freesurfer', defa
 parser.add_argument('-t', '--transform', help='Detrend using nipype & z-score', default=False, type=bool)
 parser.add_argument('-sr','--prep_runs', nargs='+', help='Convert 4D arrays to 2D arrays and apply mask, by single runs', default='', type=str)
 parser.add_argument('-all','--prep_all_data', help='Prep all data for MVPA', default= False, type=bool)
+parser.add_argument('-gzip', '--compress', help='Compress old runs to save space', default=False, type=bool)
 #parse them
 args=parser.parse_args()
 
 
 #variables in ALL_CAPS are specfically for use in the raw #bash environment
-
-#sometimes I run this on my linux shell, so need to correct for that
-if platform == 'linux':
-	#point bash to the folder with the subjects in
-	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
-#but mostly it runs on a school mac
-else:
-	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
-
 if args.subj == ['all']:
-	sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+	sub_args = get_sub_args()
 else:
 	sub_args = args.subj
 
@@ -303,7 +296,7 @@ for sub in sub_args:
 		#for now im ok with just saving the data as numpy arrays and gunzipping them,
 		#this makes sense because the first pass of my MPVA analysis will be done with scikit and not PyMVPA
 		print('Saving as numpy array with prefix "zd_"...')
-		{ ( np.save('%s'%(run_names[run][:-16] + 'zd_' + run_names[run][-16:-7]), z_imgs[run] ) ) for run in z_imgs }
+		{ ( np.savez_compressed('%s'%(run_names[run][:-16] + 'zd_' + run_names[run][-16:-7]), z_imgs[run] ) ) for run in z_imgs }
 
 		#Zip 'em up!
 		#print('Gunzipping...')
@@ -350,62 +343,61 @@ for sub in sub_args:
 		print('Saving output to subjects bold directory...')
 		#save that array!
 
-		np.save('%s/%s/bold/%s/prepped_%s'%(data_dir,SUBJ,phase2location[phase][:-16],phase2location[phase][18:-4]), roi)
+		np.savez_compressed('%s/%s/bold/%s/prepped_%s'%(data_dir,SUBJ,phase2location[phase][:-16],phase2location[phase][18:-4]), roi)
 
 
 
 	#not sure when I'll need this tbh
 	if args.prep_all_data == True:
-		#load in all the runs and concatenate them so that we can apply the mask
-		raw = glob('%s/%s/bold/day*/run00*/zd_mc_run00*.npy'%(data_dir,SUBJ))
-
-		print('Loading %s runs...'%(len(raw)))
-		run_arrays = {i: np.load(run) for i, run in enumerate(raw)}
-
-		print('Concatenating runs...')
-		data = np.concatenate([run for i,run in sorted(run_arrays.items())],axis=3)
-
-		#load in the mask as a binary array
-		mask = nib.load('%s/%s/mask/VTC_mask.nii.gz'%(data_dir,SUBJ)).get_data()
-
-		#find the locations of the non-zero mask bits
-		roi_ind = np.where(mask!=0)
-		print('loaded mask, ROI contains %s voxels'%(roi_ind[0].shape[0]))
-		#flatten the array
-		roi_ind = np.ascontiguousarray(roi_ind)
-		#transpose it
-		roi_ind = np.ascontiguousarray(roi_ind[0:3,:].T)
+		
+		for phase in phase2location:
 
 
-		#filter 'data' to include only voxels as selected by the mask, as well as flattening the data array to be Voxel x Timepoint
-		#this is the same thing as sample x feature in machine learning speak
-		#first create a new array called 'roi' that is the correct shape
-		print('Flattening data & applying mask...')
-		dim = [data.shape[3],roi_ind.shape[0]]
-		roi = np.empty(dim)
-		#then, for every TR
-		for sample in range(roi.shape[0]):
-			#and for every voxel in that TR THAT IS ALSO IN THE MASK
-			for feature, voxel in enumerate(np.rollaxis(roi_ind,axis=0)):
-				#collect its index
-				indx = np.append(voxel,sample)
-				#and add it to the roi array
-				roi[sample, feature] = data[indx[0],indx[1],indx[2],indx[3]]
+			#load in the run so that we can apply the mask
+			raw = ('%s/%s/bold/%s'%(data_dir,SUBJ,phase2location[phase]))
 
-		print('Saving output to subjects bold directory...')
-		#save that array!
-		np.save('%s/%s/bold/prepped_data'%(data_dir,SUBJ), roi)
+			print('Loading %s...'%(phase))
+			data = np.load(raw)
+
+			#load in the mask as a binary array
+			mask = nib.load('%s/%s/mask/LOC_VTC_mask.nii.gz'%(data_dir,SUBJ)).get_data()
+
+			#find the locations of the non-zero mask bits
+			roi_ind = np.where(mask!=0)
+			print('loaded mask, ROI contains %s voxels'%(roi_ind[0].shape[0]))
+			#flatten the array
+			roi_ind = np.ascontiguousarray(roi_ind)
+			#transpose it
+			roi_ind = np.ascontiguousarray(roi_ind[0:3,:].T)
 
 
+			#filter 'data' to include only voxels as selected by the mask, as well as flattening the data array to be Voxel x Timepoint
+			#this is the same thing as sample x feature in machine learning speak
+			#first create a new array called 'roi' that is the correct shape
+			print('Flattening data & applying mask...')
+			dim = [data.shape[3],roi_ind.shape[0]]
+			roi = np.empty(dim)
+			#then, for every TR
+			for sample in range(roi.shape[0]):
+				#and for every voxel in that TR THAT IS ALSO IN THE MASK
+				for feature, voxel in enumerate(np.rollaxis(roi_ind,axis=0)):
+					#collect its index
+					indx = np.append(voxel,sample)
+					#and add it to the roi array
+					roi[sample, feature] = data[indx[0],indx[1],indx[2],indx[3]]
 
+			print('Saving output to subjects bold directory...')
+			#save that array!
 
+			np.savez_compressed('%s/%s/bold/%s/prepped_%s'%(data_dir,SUBJ,phase2location[phase][:-16],phase2location[phase][18:-4]), roi)
 
+	if args.compress == True:
 
+		for phase in phase2location:
 
+			old = np.load('%s%s'%(bold,phase2location[phase]))
 
-
-
-
+			np.savez_compressed('%s%s'%(bold,phase2location[phase][:-4]), old)
 
 
 
