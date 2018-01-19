@@ -15,7 +15,7 @@ def get_data_dir():
 	elif sys.platform == 'win32':
 		return 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA\\'
 	else:
-		return '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
+		return '/Users/ach3377/Dropbox_LewPeaLab/STUDY/FearCon'
 
 data_dir = get_data_dir()
 

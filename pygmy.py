@@ -37,12 +37,15 @@ class first_level(object):
 
 		self.bold_dir = get_bold_dir(self.subj_dir)
 
-		#which anatomical are we using
+		'''
 		###this actually goes unused now so need to figure out if it needs to stay
-		#self.anatomical_type = 'struct_brain.nii.gz'
+		#which anatomical are we using
+		self.anatomical_type = 'struct_brain.nii.gz'
 
-		#self.struct = os.path.join(self.subj_dir,'anatomy',self.anatomical_type)
-
+		self.struct = os.path.join(self.subj_dir,'anatomy',self.anatomical_type)
+		'''
+		
+		
 		#init and create the output directories if needed
 		self.pyGLM_dir = os.path.join(self.subj_dir,'model','pyGLM')
 
