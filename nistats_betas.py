@@ -1,8 +1,47 @@
+'''
+Augustin Hennings 2018
+Dunsmoor/Lewis-Peacock Labs
+UT Austin
+'''
+
+
+'''
+The following is a script designed to generate ls-s style betas a la Mumford et al., 2012
+Steps to using this script are:
+	1. read what an ls-s beta estimate is
+	2. generating your own config variables
+	3. DO SOME QUALITY CONTROL
+This scripts implements nistats for general linear model estimation, this is a really cool & great pythonic package,
+but it is extremely new (alpha release) and updates to the core could easily break this script
+
+Thanks & good luck
+'''
+
+
+'''
+this script should not be run directly, but should be referenced in a seperate wrapper script
+for example: group_beta(phase='fear_conditioning', overwrite=False)
+where group_beta is the following class:
+
+
+from nistats_betas import generate_lss_betas
+from fc_config import sub_args
+
+def group_beta(phase=None,overwrite=False):
+
+	for sub in sub_args:
+
+		generate_lss_betas(subj=sub, phase=phase, tr=2, hrf_model='glover', display=False, overwrite=overwrite)
+'''
+
+
+
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import nibabel as nib
+
 
 #these are variables that are specific to my project, but have descriptive names
 #replace them here with things that make sense for your own data structure
@@ -112,6 +151,7 @@ class generate_lss_betas(object):
 
 	def beta_loop(self):
 
+		#set the number of betas to estimate to the number of trials
 		self.ntrials = len(self.events.index)
 
 		print('generating %s ls-s betas'%(self.ntrials))
