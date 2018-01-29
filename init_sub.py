@@ -2,21 +2,13 @@ import os
 from glob import glob
 import sys
 import argparse
-
+from fc_config import data_dir
 
 parser = argparse.ArgumentParser(description='Function arguments')
 
 parser.add_argument('-s', '--subj',nargs='+', help='Subject Number', default=0, type=int)
 args=parser.parse_args()
 
-if sys.platform == 'linux':
-	#point bash to the folder with the subjects in
-	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
-elif sys.platform == 'win32':
-	data_dir = 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA'
-#but mostly it runs on a school mac
-else:
-	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 
 for sub in args.subj:
 

@@ -19,17 +19,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 
 #import the local config file
-from fc_config import run_key
+from fc_config import run_key, data_dir, subj_args
 from fc_config import mvpa_prepped, dataz
 
 #import function to plot confusion matrices
 from cf_mat_plot import plot_confusion_matrix
-
-#def dive(phase=''):
-
-data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
-
-sub_args = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
 
 #make some results structures
 mean_15 = pd.DataFrame([],columns=['Subject','extinction','baseline','fear_conditioning','extinction_recall'])

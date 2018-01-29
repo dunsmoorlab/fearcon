@@ -6,16 +6,14 @@ import sys
 from glob import glob
 
 
-data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
-
 def get_data_dir():
 	#three cases: bash, windows, school mac
 	if sys.platform == 'linux':
 		return '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
 	elif sys.platform == 'win32':
-		return 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA\\'
+		return 'C:\\Users\\ACH\\Dropbox (LewPeaLab)\\STUDY\\FearCon'
 	else:
-		return '/Users/ach3377/Dropbox_LewPeaLab/STUDY/FearCon'
+		return '/Users/ach3377/Db_lpl/STUDY/FearCon/'
 
 data_dir = get_data_dir()
 
@@ -31,13 +29,29 @@ def get_subj_dir(subj):
 
 def get_bold_dir(subj_dir):
 
-	return os.path.join(subj_dir,'bold')
+	return os.path.join(subj_dir,'bold/')
+
+
+#only returns run_dir if phase is provided
+#self.subj_dir, self.bold_dir, self.run_dir = init_dirs(subj,phase=None) 
+def init_dirs(subj,phase=None):
+	subj_dir = get_subj_dir(subj)
+	bold_dir = get_bold_dir(subj_dir)
+	if phase is not None:
+		run_dir = os.path.join(bold_dir, nifti_paths[phase][:11])
+		return subj_dir, bold_dir, run_dir
+	else:
+		return subj_dir, bold_dir
+
+def fsub(subj):
+
+	return 'Sub{0:0=3d}'.format(subj)
 
 dataz = 'arr_0'
 
 
 
-run_key = {
+dc2nix_run_key = {
 	'BASELINE': 'run001',
 	'FEAR_CONDITIONING': 'run002',
 	'EXTINCTION': 'run003',
@@ -143,4 +157,16 @@ nifti_paths = {
 	'memory_run_3': 'day2/run007/mc_run007.nii.gz',
 	'localizer_1': 'day2/run008/mc_run008.nii.gz',
 	'localizer_2': 'day2/run009/mc_run009.nii.gz',
+}
+
+phase2rundir = {
+	'baseline': 'day1/run001/',
+	'fear_conditioning': 'day1/run002/',
+	'extinction': 'day1/run003/',
+	'extinction_recall': 'day2/run004/' ,
+	'memory_run_1': 'day2/run005/',
+	'memory_run_2': 'day2/run006/',
+	'memory_run_3': 'day2/run007/',
+	'localizer_1': 'day2/run008/',
+	'localizer_2': 'day2/run009/',
 }

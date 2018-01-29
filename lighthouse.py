@@ -7,7 +7,7 @@ from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.pipeline import make_pipeline, Pipeline 
 
 
-from fc_config import mvpa_prepped, dataz, data_dir, hdr_shift
+from fc_config import mvpa_prepped, dataz, data_dir, hdr_shift, init_dirs, fsub
 
 #set up the RSA object
 class rsa(object):
@@ -20,37 +20,31 @@ class rsa(object):
 
 	def __init__(self, subj):
 		
-		print('WAWDHUAWDHOADW')
-		
 		
 		self.subj = subj
 
-		self.subj_dir = os.path.join(data_dir, 'Sub{0:0=3d}'.format(self.subj))
+		self.subj_dir, self.bold_dir = init_dirs(subj)
 
-		self.bold_dir = os.path.join(self.subj_dir,'bold')
+		self.fsub = fsub(subj)
 
+		print('creating rsa object for %s'%(self.fsub))
+		
 		self.label_dir = os.path.join(self.subj_dir,'model/MVPA/labels')
 
 		#load in the meta data here
 		self.meta = pd.read_csv(os.path.join(self.subj_dir,'behavior','Sub{0:0=3d}_elog.csv'.format(self.subj)))
 
-		#see what the csplus and csminus are for this sub
-		if self.meta['DataFile.Basename'][0][0] == 'A':
-			self.csplus = 'animal'
-			self.csminus = 'tool'
-		elif self.meta['DataFile.Basename'][0][0] == 'T':
-			self.csplus = 'tool'
-			self.csminus = 'animal'
+		#self.cs_lookup()
 
 		#load these during initialization
-		self.load_localizer()
-		self.load_test_data()
-		self.collect_stim_index()
-		self.delete_rest()
-		self.feature_reduction()
-		self.unique_stims()
-		self.mean_patterns()
-		self.compare_pats()
+		#self.load_localizer()
+		#self.load_test_data()
+		#self.collect_stim_index()
+		#self.delete_rest()
+		#self.feature_reduction()
+		#self.unique_stims()
+		#self.mean_patterns(test_labels=self.test_labels,test_data=self.test_data)
+		#self.compare_mean_pats()
 
 	
 	def load_localizer(self):
@@ -132,57 +126,61 @@ class rsa(object):
 			self.test_labels[phase] = np.delete(self.test_labels[phase], self.test_rest_index[phase], axis=0)
 
 
-	def feature_reduction(self,k=1000):
+	#update 1/25/17
+	#re-written to handle general format data
+	#in its original context, it should now be implemented as:
+	#feature_reduction(k=1000, loc_dat=self.loc_data, loc_lab=self.loc_labels, test_dat=self.test_data)
+	def feature_reduction(self,k=1000,train_dat=None,train_lab=None,reduce_dat=None):
 
-		self.classif_alg = LogisticRegression()
+		classif_alg = LogisticRegression()
 
-		self.feature_selection = SelectKBest(f_classif,k)
+		feature_selection = SelectKBest(f_classif,k)
 
-		self.clf = Pipeline([('anova', self.feature_selection), ('alg', self.classif_alg)])
+		self.clf = Pipeline([('anova', feature_selection), ('alg', classif_alg)])
 
-		self.clf.fit(self.loc_data, self.loc_labels)
+		self.clf.fit(train_dat, train_lab)
 
 		#reshape the test_data to 1000 voxels using the localizer data
-		for phase in self.test_data:
-			self.test_data[phase] = self.feature_selection.fit(self.loc_data,self.loc_labels).transform(self.test_data[phase])
+		for phase in reduce_dat:
+			reduce_dat[phase] = feature_selection.fit(train_dat, train_lab).transform(reduce_dat[phase])
 
 
-	def mean_patterns(self):
+	def mean_patterns(self,test_labels=None,test_data=None):
 		#get index of csplus
-		self.csplus_index = { phase: [i for i, label in enumerate(self.test_labels[phase]) if 'CS+' in label] for phase in self.test_labels }
+		self.csplus_index = { phase: [i for i, label in enumerate(test_labels[phase]) if 'CS+' in label] for phase in test_labels }
 		#get index of csminus
-		self.csmin_index = { phase: [i for i, label in enumerate(self.test_labels[phase]) if 'CS-' in label] for phase in self.test_labels }
+		self.csmin_index = { phase: [i for i, label in enumerate(test_labels[phase]) if 'CS-' in label] for phase in test_labels }
 
 		#collect the mean patterns for csplus and csmin in each phase
-		self.mean_csplus = { phase: self.test_data[phase][self.csplus_index[phase]].mean(axis=0) for phase in self.test_data }
+		self.mean_csplus = { phase: test_data[phase][self.csplus_index[phase]].mean(axis=0) for phase in test_data }
 
-		self.mean_csmin = { phase: self.test_data[phase][self.csmin_index[phase]].mean(axis=0) for phase in self.test_data }
+		self.mean_csmin = { phase: test_data[phase][self.csmin_index[phase]].mean(axis=0) for phase in test_data }
 
 		#np.where(self.test_labels[phase] == 'CS+')
 
 	def phase_pattern_corr(self, _cond, _phase):
 
 		if _cond == 'CS+':
-			self.comp_cond = self.mean_csplus
+			comp_cond = self.mean_csplus
 		elif _cond == 'CS-':
-			self.comp_cond = self.mean_csmin
+			comp_cond = self.mean_csmin
 		
-		self.csplus_res = [ np.corrcoef(self.comp_cond[_phase], self.mean_csplus[phase] )[0][1] for phase in self.mean_csplus ]
-		self.csmin_res = [ np.corrcoef(self.comp_cond[_phase], self.mean_csmin[phase] )[0][1] for phase in self.mean_csmin ]
+		csplus_res = [ np.corrcoef(comp_cond[_phase], self.mean_csplus[phase] )[0][1] for phase in self.mean_csplus ]
+		csmin_res = [ np.corrcoef(comp_cond[_phase], self.mean_csmin[phase] )[0][1] for phase in self.mean_csmin ]
 
-		return(np.vstack((self.csplus_res,self.csmin_res)).reshape((-1),order='F') )
-
-
-	def stim_pattern_corr(self,_stim):
-
-		self.stim_corr = [ np.corrcoef( self.comp_these_stims[_stim], self.comp_these_stims[stim] )[0][1] for stim in self.comp_these_stims ]
-
-		return self.stim_corr
+		return(np.vstack((csplus_res,csmin_res)).reshape((-1),order='F') )
 
 
-	def compare_pats(self):
-		self.cond_names = ['base_CS+','base_CS-','fear_CS+','fear_CS-','ext_CS+','ext_CS-','mem_1_CS+','mem_1_CS-','mem_2_CS+','mem_2_CS-','mem_3_CS+','mem_3_CS-']
-		self.comp_mat = pd.DataFrame([], index = self.cond_names, columns = self.cond_names)
+	def stim_pattern_corr(self,_stim=None,comp_these_stims=None):
+
+		stim_corr = [ np.corrcoef( comp_these_stims[_stim], comp_these_stims[stim] )[0][1] for stim in comp_these_stims ]
+
+		return stim_corr
+
+
+	def compare_mean_pats(self):
+		cond_names = ['base_CS+','base_CS-','fear_CS+','fear_CS-','ext_CS+','ext_CS-','mem_1_CS+','mem_1_CS-','mem_2_CS+','mem_2_CS-','mem_3_CS+','mem_3_CS-']
+		self.comp_mat = pd.DataFrame([], index = cond_names, columns = cond_names)
 
 		for cond in self.comp_mat.columns:
 			if 'CS+' in cond:
@@ -260,36 +258,48 @@ class rsa(object):
 		self.sliding_window = []
 
 
-	def unique_stims(self):
+	def unique_stims(self,test_labels=None):
 
-		self.unique = { phase: np.unique(self.test_labels[phase]) for phase in self.test_labels }
+		self.unique = { phase: np.unique(test_labels[phase]) for phase in test_labels }
+
+	#in the case of beta_rsa the counted_labels and the labels are the same
+	#other wise this counted_labels=self.unique and test_labels=self.test_labels, test_data = self.test_data
+	#BUT ACTUALLY DON'T NEED TO DO THIS FOR BETA RSA BECAUSE WE ALREADY ONLY HAVE 1 "VOLUME" PER STIM
+	#BUT, we do it anyways because it creates a dictionary in which each trial is associated with its CS_00 handle
+	def phase_stim_patterns(self,phase=None, counted_labels=None, test_data=None, test_labels=None):
+
+		mean_stim_pats = {}
+
+		for stim in counted_labels[phase]:
+
+			stim_pats = test_data[phase][np.where(test_labels[phase] == stim)]
+
+			mean_stim_pats[stim] = stim_pats.mean(axis=0)
+
+		return mean_stim_pats
+
+	#most of these arguments are here just to pass to phase_stim_patterns()
+	def comp_phase_stim_patterns(self,phase, counted_labels=None, test_data=None, test_labels=None):
+
+		comp_these_stims = self.phase_stim_patterns(phase=phase, counted_labels=counted_labels, test_data=test_data, test_labels=test_labels)
+
+		phase_comp_mat = pd.DataFrame([], columns=counted_labels[phase], index=counted_labels[phase])
+
+		for stim in phase_comp_mat.columns:
+
+			phase_comp_mat[stim] = self.stim_pattern_corr(_stim=stim, comp_these_stims=comp_these_stims)
+
+		return phase_comp_mat
 
 
-	def phase_stim_patterns(self,phase):
-
-		self.mean_stim_pats = {}
-
-		for stim in self.unique[phase]:
-
-			self.stim_pats = self.test_data[phase][np.where(self.test_labels[phase] == stim)]
-
-			self.mean_stim_pats[stim] = self.stim_pats.mean(axis=0)
-
-		return self.mean_stim_pats
-
-
-	def comp_phase_stim_patterns(self,phase):
-
-		self.comp_these_stims = self.phase_stim_patterns(phase)
-
-		self.phase_comp_mat = pd.DataFrame([], columns = self.unique[phase], index = self.unique[phase])
-
-		for stim in self.phase_comp_mat.columns:
-
-			self.phase_comp_mat[stim] = self.stim_pattern_corr(stim)
-
-		return self.phase_comp_mat
-
+	#see what the csplus and csminus are for this sub
+	def cs_lookup(self):	
+		if self.meta['DataFile.Basename'][0][0] == 'A':
+			self.csplus = 'animal'
+			self.csminus = 'tool'
+		elif self.meta['DataFile.Basename'][0][0] == 'T':
+			self.csplus = 'tool'
+			self.csminus = 'animal'
 
 
 
