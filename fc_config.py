@@ -29,7 +29,7 @@ def get_subj_dir(subj):
 
 def get_bold_dir(subj_dir):
 
-	return os.path.join(subj_dir,'bold/')
+	return os.path.join(subj_dir,'bold' + os.sep)
 
 
 #only returns run_dir if phase is provided

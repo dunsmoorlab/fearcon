@@ -19,7 +19,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 
 #import the local config file
-from fc_config import run_key, data_dir, subj_args
+from fc_config import py_run_key, data_dir, sub_args
 from fc_config import mvpa_prepped, dataz
 
 #import function to plot confusion matrices
@@ -226,7 +226,7 @@ for phase in test_runs:
 	event_out.loc[('CS-',phase), 'Mean'][:] = csmin_out.xs(phase, level='Phase').mean()
 	event_out.loc[('CS-',phase), 'SEM'][:] = csmin_out.xs(phase, level='Phase').sem()
 
-event_out.to_csv('%s/graphing/sklearn_dive/event_cs_scene.csv'%(data_dir), sep=',')
+event_out.to_csv('%s/graphing/sklearn_dive_v2/event_cs_scene.csv'%(data_dir), sep=',')
 
 #do the same thing collapsed across condition
 tr = ['-4','-2','0','2']
@@ -240,7 +240,7 @@ for phase in test_runs:
 		all_out.loc[(phase,time),'Mean'] = comb_out.xs(phase, level='Phase').mean()[time]
 		all_out.loc[(phase,time),'SEM'] = comb_out.xs(phase, level='Phase').sem()[time]
 
-all_out.to_csv('%s/graphing/sklearn_dive/event_scene.csv'%(data_dir), sep=',')
+all_out.to_csv('%s/graphing/sklearn_dive_v2/event_scene.csv'%(data_dir), sep=',')
 
 
 Rgraph = pd.DataFrame([], columns = ['Phase','Mean','SEM'])
@@ -252,10 +252,10 @@ Rgraph = Rgraph.set_index('Phase')
 Rgraph.Mean = mean_15.mean()[1:5]
 Rgraph.SEM = mean_15.sem()[1:5]
 
-Rgraph.to_csv('%s/graphing/sklearn_dive/evidence_15tr.csv'%(data_dir), sep=',')
+Rgraph.to_csv('%s/graphing/sklearn_dive_v2/evidence_15tr.csv'%(data_dir), sep=',')
 
 
-mean_15.to_csv('%s/graphing/sklearn_dive/subject_evidence_15tr.csv'%(data_dir), sep=',')
+mean_15.to_csv('%s/graphing/sklearn_dive_v2/subject_evidence_15tr.csv'%(data_dir), sep=',')
 
 
 phase_out = pd.DataFrame([],columns=['base_mean','base_sem','fear_mean','fear_sem','ext_mean','ext_sem','er_mean','er_sem'])
@@ -272,8 +272,8 @@ phase_out.ext_sem = ext_out.sem(axis=1)
 phase_out.er_mean = er_out.mean(axis=1)
 phase_out.er_sem = er_out.sem(axis=1)
 
-phase_out.to_csv('%s/graphing/sklearn_dive/evidence_by_tr.csv'%(data_dir), sep=',')
+phase_out.to_csv('%s/graphing/sklearn_dive_v2/evidence_by_tr.csv'%(data_dir), sep=',')
 
-er_out.to_csv('%s/graphing/sklearn_dive/er_scene_evidence.csv'%(data_dir), sep=',')
+er_out.to_csv('%s/graphing/sklearn_dive_v2/er_scene_evidence.csv'%(data_dir), sep=',')
 
-er_4tr.to_csv('%s/graphing/sklearn_dive/er_event_scene_evidence.csv'%(data_dir), sep=',')
+er_4tr.to_csv('%s/graphing/sklearn_dive_v2/er_event_scene_evidence.csv'%(data_dir), sep=',')

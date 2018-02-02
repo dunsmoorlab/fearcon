@@ -130,7 +130,7 @@ class rsa(object):
 	#re-written to handle general format data
 	#in its original context, it should now be implemented as:
 	#feature_reduction(k=1000, loc_dat=self.loc_data, loc_lab=self.loc_labels, test_dat=self.test_data)
-	def feature_reduction(self,k=1000,train_dat=None,train_lab=None,reduce_dat=None):
+	def feature_reduction(self,k=0,train_dat=None,train_lab=None,reduce_dat=None):
 
 		classif_alg = LogisticRegression()
 
@@ -179,7 +179,7 @@ class rsa(object):
 
 
 	def compare_mean_pats(self):
-		cond_names = ['base_CS+','base_CS-','fear_CS+','fear_CS-','ext_CS+','ext_CS-','mem_1_CS+','mem_1_CS-','mem_2_CS+','mem_2_CS-','mem_3_CS+','mem_3_CS-']
+		cond_names = ['base_CS+','base_CS-','fear_CS+','fear_CS-','ext_CS+','ext_CS-','extRe_CS+','extRe_CS-','mem_1_CS+','mem_1_CS-','mem_2_CS+','mem_2_CS-','mem_3_CS+','mem_3_CS-']
 		self.comp_mat = pd.DataFrame([], index = cond_names, columns = cond_names)
 
 		for cond in self.comp_mat.columns:
@@ -188,8 +188,10 @@ class rsa(object):
 					self.comp_mat[cond] = self.phase_pattern_corr('CS+','baseline')
 				if 'fear' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS+','fear_conditioning')
-				if 'ext' in cond:
+				if 'ext_' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS+','extinction')
+				if 'extRe' in cond:
+					self.comp_mat[cond] = self.phase_pattern_corr('CS+','extinction_recall')				
 				if 'mem_1' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS+','memory_run_1')
 				if 'mem_2' in cond:
@@ -201,8 +203,10 @@ class rsa(object):
 					self.comp_mat[cond] = self.phase_pattern_corr('CS-','baseline')
 				if 'fear' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS-','fear_conditioning')
-				if 'ext' in cond:
+				if 'ext_' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS-','extinction')
+				if 'extRe' in cond:
+					self.comp_mat[cond] = self.phase_pattern_corr('CS-','extinction_recall')
 				if 'mem_1' in cond:
 					self.comp_mat[cond] = self.phase_pattern_corr('CS-','memory_run_1')
 				if 'mem_2' in cond:

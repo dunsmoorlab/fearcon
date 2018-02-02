@@ -81,7 +81,7 @@ class glm_timing(object):
 			self.phase_timing.trial_type = self.phase_meta.cstype
 
 
-		if self.phase[0:3] == 'loc':
+		elif self.phase[0:3] == 'loc':
 
 			#find the onsets
 			self.phase_timing.onset = self.phase_meta['stim1.OnsetTime'] - self.phase_start

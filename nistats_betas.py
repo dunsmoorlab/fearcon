@@ -97,6 +97,10 @@ class generate_lss_betas(object):
 			#the format should be a pandas DataFrame, with the columns: duration, onset, & trial_type
 			self.events = glm_timing(subj,phase).phase_events()
 
+			#something weird was happening with my phase events, this should prevent it from happening again
+			if self.events.isnull().values.any():
+				sys.exit('null value encountered in glm_timing(%s,%s).phase_events()'%(subj,phase))
+
 			#do work
 			self.load_bold(phase=phase)
 

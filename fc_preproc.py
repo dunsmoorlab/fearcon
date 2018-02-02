@@ -5,13 +5,14 @@ from fc_config import sub_args
 
 #assumes that you want to run everything on every subject
 #sub is the counter, and subj is the subject object
-for sub in sub_args:
+# for sub in sub_args:
 
-	preproc(sub).fsl_mcflirt()
-
-
+# 	preproc(sub).fsl_mcflirt()
 
 
+
+for sub in [1,2,3,4,5,6]:
+	preproc(sub).mvpa_prep()
 
 
 

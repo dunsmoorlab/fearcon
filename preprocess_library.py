@@ -2,9 +2,15 @@ import os
 import numpy as np
 import pandas as pd
 import nibabel as nib
-from glob import glob
 
-from fc_config import data_dir, sub_args, fsub, init_dirs, phase2rundir, dc2nix_run_key
+from glob import glob
+from scipy.signal import detrend
+from scipy.stats import zscore
+from nilearn.masking import apply_mask
+
+
+from fc_config import data_dir, sub_args, fsub, init_dirs, phase2rundir, dc2nix_run_key, mvpa_prepped, nifti_paths
+
 
 
 class preproc(object):
@@ -99,11 +105,54 @@ class preproc(object):
 			print('refvol already exists, moving on')
 
 
+	def create_mask(self):
+
+		#this code needs to be heavily re-written
+		pass
+
+	def mvpa_prep(self):
+
+		print('Prepping runs for MVPA')
+
+
+		#load the runs
+		mc_runs = { phase: nib.load('%s%s'%(self.subj.bold_dir, nifti_paths[phase])) for phase in nifti_paths }
+
+		print('Applying Mask')
+		#have to mask it _first_
+		mc_runs = { phase: apply_mask(mc_runs[phase], self.subj.maskvol) for phase in mc_runs }
+
+		print('Detrending')
+		#detrend
+		mc_runs = { phase: detrend(mc_runs[phase], axis=0) for phase in mc_runs }
+
+		print('Z-scoring')
+		#z_score
+		mc_runs = { phase: zscore(mc_runs[phase], axis=0) for phase in mc_runs }
+
+		print('Saving')
+		#save 'em
+		{ np.savez_compressed( '%s%s'%(self.subj.bold_dir, mvpa_prepped[phase]),  mc_runs[phase] ) for phase in mc_runs }
+
+
+	def clean_data(self):
+
+
+
+
+		pass
+
+
+
+
+
 
 
 class meta(object):
 
 	def __init__(self, sub):
+
+		self.num = sub
 
 		self.subj_dir, self.bold_dir = init_dirs(sub)
 
@@ -116,7 +165,12 @@ class meta(object):
 		self.day1 = os.path.join(self.bold_dir,'day1')
 		self.day2 = os.path.join(self.bold_dir,'day2')
 
-		self.refvol = os.path.join(self.bold_dir,'refvol.nii.gz')
+
 
 		self.raw = os.path.join(self.subj_dir,'raw')
 
+		self.mask = os.path.join(self.subj_dir, 'mask')
+
+
+		self.refvol = os.path.join(self.bold_dir,'refvol.nii.gz')
+		self.maskvol = os.path.join(self.mask, 'LOC_VTC_mask.nii.gz')

@@ -14,7 +14,9 @@ from fc_config import data_dir, init_dirs, fsub, phase2rundir
 
 class beta_rsa(object):
 
-	def __init__(self, subj):
+	test_runs=['baseline','fear_conditioning','extinction','extinction_recall','memory_run_1','memory_run_2','memory_run_3']
+
+	def __init__(self, subj, k):
 		
 		self.rsa = rsa(subj)
 
@@ -22,10 +24,9 @@ class beta_rsa(object):
 
 		self.load_loc_betas()
 		self.load_test_betas()
-		self.hack_day2_affine()
 		self.mask_runs()
 
-		self.rsa.feature_reduction(k=1000, train_dat=self.loc_betas, train_lab=self.loc_labels, reduce_dat=self.test_betas)
+		self.rsa.feature_reduction(k=k, train_dat=self.loc_betas, train_lab=self.loc_labels, reduce_dat=self.test_betas)
 		self.rsa.unique_stims(test_labels=self.test_beta_labels)
 		self.rsa.mean_patterns(test_labels=self.test_beta_labels, test_data=self.test_betas)
 		self.rsa.compare_mean_pats()
@@ -67,7 +68,7 @@ class beta_rsa(object):
 	def load_test_betas(self):
 
 		#point to the beta files
-		test_beta_files = { phase: glob('%s%sls-s_betas/beta_***.nii.gz'%(self.rsa.bold_dir,phase2rundir[phase])) for phase in rsa.test_runs }
+		test_beta_files = { phase: glob('%s%sls-s_betas/beta_***.nii.gz'%(self.rsa.bold_dir,phase2rundir[phase])) for phase in self.test_runs }
 
 		#load them in and concatenate within runs
 		self.test_betas = { phase: nib.concat_images(test_beta_files[phase]) for phase in test_beta_files }
@@ -89,18 +90,18 @@ class beta_rsa(object):
 
 		self.loc_betas = apply_mask(self.loc_betas, self.mask)
 
-	
-	def hack_day2_affine(self):
+	#so in the end don't actually need this, because I went back and fixed my day 2 motion correction
+	# def hack_day2_affine(self):
 
-		self.refvol = nib.load('%srefvol.nii.gz'%(self.rsa.bold_dir))
+	# 	self.refvol = nib.load('%srefvol.nii.gz'%(self.rsa.bold_dir))
 
-		correct_these = [phase for phase in phase2rundir if 'day2' in phase2rundir[phase] and phase in self.test_betas.keys()]
+	# 	correct_these = [phase for phase in phase2rundir if 'day2' in phase2rundir[phase] and phase in self.test_betas.keys()]
 		
-		for phase in correct_these:
+	# 	for phase in correct_these:
 
-				self.test_betas[phase].affine[:] = self.refvol.affine
+	# 			self.test_betas[phase].affine[:] = self.refvol.affine
 
-		self.loc_betas.affine[:] = self.refvol.affine
+	# 	self.loc_betas.affine[:] = self.refvol.affine
 
 	#paragraph that adds appropriate CS_000 number afterwards
 	def count_stims(self,labels=None):
