@@ -8,7 +8,7 @@ from fc_config import mvpa_prepped, dataz, data_dir, get_subj_dir, get_bold_dir
 
 class glm_timing(object):
 
-	#this is a hacky line I need because of e-prime
+	#this is a hacky line I need because of e-prime, provides the correct starting line number
 	first_line = {'baseline': 0, 'fearconditioning': 48, 'extinction': 96, 'extinctionRecall': 384,
 					'memory_run_1': 408, 'memory_run_2': 488, 'memory_run_3': 568,
 					'localizer_1': 0, 'localizer_2':0 }
@@ -38,8 +38,6 @@ class glm_timing(object):
 
 		self.phase_meta = self.get_phase_meta()
 
-
-		#self.phase_events()
 
 	def get_phase_meta(self):
 		#isoloate the metadata for this phase
@@ -94,6 +92,10 @@ class glm_timing(object):
 
 			self.phase_timing.trial_type = [self.find_between(cat,'/','/') for cat in self.phase_timing.trial_type]
 
+			#this is literally just here to get rid of the 's' on animals and tools
+			dumb_thing = {'animals':'animal','tools':'tool','scrambled':'scrambled','indoor':'indoor','outdoor':'outdoor'}
+
+			self.phase_timing.trial_type = [dumb_thing[label] for label in self.phase_timing.trial_type]
 
 		else:
 			#find the onsets
@@ -149,4 +151,25 @@ class glm_timing(object):
 
 		except ValueError:
 			return 'string search fucked up'
+
+
+	def loc_blocks(self):
+
+		if 'localizer' not in self.phase:
+			print('this is only for localizer runs, pls stop')
+			sys.exit()
+
+		loc_events = self.phase_events()
+		
+		self.block_events = pd.DataFrame([],columns=['duration','onset','trial_type'],index=list(range(0,int(len(loc_events.index)/8))))
+
+		block = np.array(range(8))
+
+		for i in range(0,int(len(loc_events.index)/8)):
+
+			#TODO is just write a line for duration
+			self.block_events.trial_type.loc[i]
+			self.block_events.onset.loc[i] = loc_events.loc[block].onset[block[0]]
+
+			block += 8
 

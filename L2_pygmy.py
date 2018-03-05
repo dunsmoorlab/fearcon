@@ -45,9 +45,9 @@ class second_level(object):
 				plt.ion()
 				self.display_first_levels(contrast)
 
-			self.init_level2()
+			self.glm_level2, self.design_matrix = self.init_level2(self.first_levels, smoothing=8)
 		
-			self.fit_level2()
+			self.glm_level2, self.z_map = self.fit_level2(self.glm_level2, self.first_levels, self.design_matrix)
 
 			if display:
 				self.display_second_level(contrast)
@@ -77,19 +77,21 @@ class second_level(object):
 		fig.suptitle('%s'%(contrast))
 
 
-	def init_level2(self,smoothing=8):
+	def init_level2(self,first_levels, smoothing=8):
 
-		self.design_matrix = pd.DataFrame([1] * len(self.first_levels), columns=['intercept'])
+		design_matrix = pd.DataFrame([1] * len(first_levels), columns=['intercept'])
 
-		self.glm_level2 = SecondLevelModel(smoothing_fwhm=smoothing)
+		glm_level2 = SecondLevelModel(smoothing_fwhm=smoothing)
 
+		return glm_level2, design_matrix
 
-	def fit_level2(self):
+	def fit_level2(self, glm_level2, first_levels, design_matrix):
 
-		self.glm_level2 = self.glm_level2.fit(self.first_levels, design_matrix=self.design_matrix)
+		glm_level2 = glm_level2.fit(first_levels, design_matrix=design_matrix)
 
-		self.z_map = self.glm_level2.compute_contrast(output_type='z_score')
+		z_map = glm_level2.compute_contrast(output_type='z_score')
 
+		return glm_level2, z_map
 
 	def display_second_level(self,contrast,pval=0.01):
 

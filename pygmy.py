@@ -14,6 +14,7 @@ from fc_config import data_dir, get_subj_dir, get_bold_dir, nifti_paths, py_run_
 
 from glm_timing import glm_timing
 
+from preprocess_library import meta
 
 class first_level(object):
 
@@ -22,20 +23,14 @@ class first_level(object):
 	#not sure how to use this yet
 	slice_time_ref = 0
 	#glover is cannonical double gamma HRF - derivative goes unused and should be removed if I don't figure out what it does
-	hrf_model = 'glover + derivative'
+	hrf_model = 'glover'
 
 	def __init__(self,subj=0,phase=None,display=False):
 
 		#init some paths
-		self.subj = subj
+		self.subj = meta(subj)
 
-		self.fsub = 'Sub{0:0=3d}'.format(self.subj)
-
-		print('%s first level GLM; %s'%(self.fsub,phase))
-
-		self.subj_dir = get_subj_dir(subj)
-
-		self.bold_dir = get_bold_dir(self.subj_dir)
+		print('%s %s'%(self.subj.fsub,phase))
 
 		'''
 		###this actually goes unused now so need to figure out if it needs to stay
@@ -47,7 +42,7 @@ class first_level(object):
 		
 		
 		#init and create the output directories if needed
-		self.pyGLM_dir = os.path.join(self.subj_dir,'model','pyGLM')
+		self.pyGLM_dir = os.path.join(self.subj.subj_dir,'model','pyGLM')
 
 		self.lev1_dir = os.path.join(self.pyGLM_dir,py_run_key[phase])
 
@@ -63,12 +58,13 @@ class first_level(object):
 		self.events = glm_timing(subj,phase).phase_events()
 
 
-		self.load_bold(phase)
-		self.create_mean()
-		self.init_glm()
-		self.fit_glm()
+		self.func = self.load_bold(phase)
+		self.mean_func = self.create_mean(self.func)
+		
+		self.glm = self.init_glm()
+		self.glm, self.design_matrix = self.fit_glm(self.glm,self.func, self.events)
 		if display:
-			self.display_design_matrix()
+			self.display_design_matrix(self.design_matrix)
 		self.set_contrasts()
 
 		#this is the meat of the program and should be moved to the pyGLM_lev1.py if more control is needed
@@ -76,39 +72,43 @@ class first_level(object):
 			
 			self.contrast_titles = ['CSplus___CSmin','CSmin___CSplus']
 
-			self.glm_stats(self.CSplus_minus_CSmin,self.contrast_titles[0])
-			self.glm_stats(self.CSmin_minus_CSplus,self.contrast_titles[1])
+			self.glm_stats(self.glm, self.CSplus_minus_CSmin,self.contrast_titles[0])
+			self.glm_stats(self.glm, self.CSmin_minus_CSplus,self.contrast_titles[1])
 
 
 	def load_bold(self,phase):
 
 		#need path to motion corrected functional run
-		self.func = os.path.join(self.bold_dir,nifti_paths[phase])
+		func = os.path.join(self.subj.bold_dir,nifti_paths[phase])
+		return func
 
-	def create_mean(self):
+	def create_mean(self,func):
 
 		#create the mean functional image, which is only needed for graphing, this also should be maybe be moved to pyGLM_lev1.py
-		self.mean_func = image.mean_img(self.func)
+		mean_func = image.mean_img(func)
+		return mean_func
 
 	def init_glm(self):
 
 		#init the model
 		#this is what needs the most work in terms of reading documentation and tweaking parameters
-		self.glm = FirstLevelModel(t_r=first_level.tr, slice_time_ref=first_level.slice_time_ref,
+		glm = FirstLevelModel(t_r=first_level.tr, slice_time_ref=first_level.slice_time_ref,
 									hrf_model=first_level.hrf_model)
-
-	def fit_glm(self):
+		return glm
+	def fit_glm(self, glm, func, events):
 
 		#fit the GLM
-		self.glm = self.glm.fit(self.func,self.events)
+		glm = glm.fit(func, events)
 
 		#grab the design matrix
-		self.design_matrix = self.glm.design_matrices_[0]
+		design_matrix = glm.design_matrices_[0]
 
-	def display_design_matrix(self):
+		return glm, design_matrix
+
+	def display_design_matrix(self,design_matrix):
 
 		#self explanatory
-		plot_design_matrix(self.design_matrix)
+		plot_design_matrix(design_matrix)
 		plt.show()
 
 	def set_contrasts(self):
@@ -125,17 +125,20 @@ class first_level(object):
 		self.CSplus_minus_CSmin = self.contrasts['CS+'] - self.contrasts['CS-']
 		self.CSmin_minus_CSplus = self.contrasts['CS-'] - self.contrasts['CS+']
 
-	def glm_stats(self,contrast_,save_title):
+	def glm_stats(self,glm,contrast_,save_title=None):
 
 		#generate effect maps
-		self.effect_map = self.glm.compute_contrast(contrast_, output_type='effect_size')
-		self.effect_map = self.coerce_4d(self.effect_map)
+		#effect_map = self.glm.compute_contrast(contrast_, output_type='effect_size')
+		#effect_map = self.coerce_4d(self.effect_map)
 		
 		#generate z_score map
-		self.z_map = self.glm.compute_contrast(contrast_,output_type='z_score')
-		self.z_map = self.coerce_4d(self.z_map)
+		z_map = glm.compute_contrast(contrast_,output_type='z_score')
+		#z_map = self.coerce_4d(self.z_map)
 
-		self.save_stats(save_title)
+		if save_title is not None:
+			self.save_stats(z_map, save_title)
+
+		return z_map
 
 	def coerce_4d(self,img):
 		
@@ -146,7 +149,7 @@ class first_level(object):
 
 		return img
 
-	def save_stats(self,title):
+	def save_stats(self,stats,title):
 
 		#save both
 		nib.save(self.effect_map, os.path.join(self.lev1_dir,'%s_eff_map.nii.gz'%(title)))

@@ -5,7 +5,7 @@ import numpy as np
 import argparse
 from sys import platform
 
-
+from fc_config import data_dir
 
 parser = argparse.ArgumentParser(description='Function arguments')
 
@@ -16,12 +16,7 @@ args=parser.parse_args()
 
 
 #point to data directory
-if platform == 'linux':
-	#point bash to the folder with the subjects in
-	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
-#but mostly it runs on a school mac
-else:
-	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
+
 
 
 if args.subj == ['all']:

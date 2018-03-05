@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 import sys
 from scipy import stats
+from fc_config import data_dir, sub_args
 #script needs to be run from the 'fearcon pilot analysis' folder or it will not w0rk
 # After i get this to work once, go back and figure out how to add an optional argument to evaluate 
 # only high conffccridence hits.
@@ -17,19 +18,20 @@ parser = argparse.ArgumentParser(description='Function arguments')
 parser.add_argument('-s','--subj', help='Subject number', default=00, type=str)
 args = parser.parse_args()
 
-#point to the data direct
-if sys.platform == 'linux':
-	#point bash to the folder with the subjects in
-	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
-elif sys.platform == 'win32':
-	data_dir = 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA'
-#but mostly it runs on a school mac
-else:
-	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
+# #point to the data direct
+# if sys.platform == 'linux':
+# 	#point bash to the folder with the subjects in
+# 	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
+# elif sys.platform == 'win32':
+# 	data_dir = 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA'
+# #but mostly it runs on a school mac
+# else:
+# 	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
 
 #handle the subjects arg (all or one)
 if args.subj == 'all':
-	subj = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
+	subj = sub_args
+	# subj = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
 	iterations = len(subj)
 #if its not 'all' then we need to convert it into an int
 else:

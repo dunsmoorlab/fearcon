@@ -11,7 +11,7 @@ def get_data_dir():
 	if sys.platform == 'linux':
 		return '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
 	elif sys.platform == 'win32':
-		return 'C:\\Users\\ACH\\Dropbox (LewPeaLab)\\STUDY\\FearCon'
+		return 'C:\\Users\\ACH\\Dropbox (LewPeaLab)\\STUDY\\FearCon\\'
 	else:
 		return '/Users/ach3377/Db_lpl/STUDY/FearCon/'
 
@@ -22,6 +22,7 @@ def get_sub_args():
 
 sub_args = get_sub_args()
 
+working_subs = [1,2,3,4,5,6,7,8,9,10,12,13,14,15,16]
 
 def get_subj_dir(subj):
 
@@ -49,7 +50,7 @@ def fsub(subj):
 
 dataz = 'arr_0'
 
-
+cv_iter = [2,5,10,50,100,150,200,300,500,1000,1500,2000]
 
 dc2nix_run_key = {
 	'BASELINE': 'run001',
@@ -147,6 +148,31 @@ mvpa_prepped = {
 	'localizer_2': 'day2/run009/prepped_run009.npz',
 }
 
+PPA_prepped = {
+	'baseline': 'day1/run001/PPA_prepped_run001.npz',
+	'fear_conditioning': 'day1/run002/PPA_prepped_run002.npz',
+	'extinction': 'day1/run003/PPA_prepped_run003.npz',
+	'extinction_recall': 'day2/run004/PPA_prepped_run004.npz' ,
+	'memory_run_1': 'day2/run005/PPA_prepped_run005.npz',
+	'memory_run_2': 'day2/run006/PPA_prepped_run006.npz',
+	'memory_run_3': 'day2/run007/PPA_prepped_run007.npz',
+	'localizer_1': 'day2/run008/PPA_prepped_run008.npz',
+	'localizer_2': 'day2/run009/PPA_prepped_run009.npz',
+}
+
+PPA_fs_prepped = {
+	'baseline': 'day1/run001/PPA_fs_prepped_run001.npz',
+	'fear_conditioning': 'day1/run002/PPA_fs_prepped_run002.npz',
+	'extinction': 'day1/run003/PPA_fs_prepped_run003.npz',
+	'extinction_recall': 'day2/run004/PPA_fs_prepped_run004.npz' ,
+	'memory_run_1': 'day2/run005/PPA_fs_prepped_run005.npz',
+	'memory_run_2': 'day2/run006/PPA_fs_prepped_run006.npz',
+	'memory_run_3': 'day2/run007/PPA_fs_prepped_run007.npz',
+	'localizer_1': 'day2/run008/PPA_fs_prepped_run008.npz',
+	'localizer_2': 'day2/run009/PPA_fs_prepped_run009.npz',
+}
+
+
 nifti_paths = {
 	'baseline': 'day1/run001/mc_run001.nii.gz',
 	'fear_conditioning': 'day1/run002/mc_run002.nii.gz',
@@ -169,4 +195,16 @@ phase2rundir = {
 	'memory_run_3': 'day2/run007/',
 	'localizer_1': 'day2/run008/',
 	'localizer_2': 'day2/run009/',
+}
+
+n_trials = {
+	'baseline': range(0,48),
+	'fear_conditioning': range(0,48),
+	'extinction': range(0,48),
+	'extinction_recall': range(0,24) ,
+	'memory_run_1': range(0,80),
+	'memory_run_2': range(0,80),
+	'memory_run_3': range(0,80),
+	'localizer_1': range(0,160),
+	'localizer_2': range(0,160),
 }

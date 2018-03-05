@@ -22,9 +22,9 @@ from subprocess import Popen, PIPE
 
 
 #import the local config file
-from fc_config import subj_dir, data_dir
+from fc_config import data_dir
 from fc_config import get_sub_args
-from fc_config import phase2location, mvpa_prepped, run_key
+#from fc_config import phase2location, mvpa_prepped,# run_key
 
 #build the python arg_parser
 parser = argparse.ArgumentParser(description='Function arguments')
@@ -56,7 +56,7 @@ for sub in sub_args:
 
 	print('splish splash Sub{0:0=3d}'.format(sub))
 
-	fs_dir = data_dir + SUBJ + 'fs/'
+	fs_dir = data_dir + SUBJ + os.sep + SUBJ + 'fs/'
 
 
 	#tell python where the raw folder is
@@ -242,29 +242,60 @@ for sub in sub_args:
 			print('Combining LOC & VTC masks')
 			os.system('fslmaths %sLOC_mask.nii.gz -add %sVTC_mask.nii.gz -bin %sLOC_VTC_mask.nii.gz'%(mask,mask,mask))
 
+		if 'PPA_fs_mask.nii.gz' not in os.listdir(mask):
+			print('Generating PPA_fs_mask mask')
+			#left hemishpere
+			lhd1_mask = Popen(['mri_label2vol', '--subject', '%sfs'%(SUBJ),
+			'--label', '%slh.parahippocampal.label'%(label),
+			'--temp', '%srefvol.nii.gz'%(bold),
+			'--reg', '%sRegMat.dat'%(registration),
+			'--proj', 'frac', '0', '1', '.1',
+			'--fillthresh', '.3',
+			'--hemi', 'lh',
+			'--o', '%slh_PPA_fs.nii.gz'%(mask)],
+			env=env)
+			lhd1_mask.wait()
+
+			#right hemisphere
+			rhd1_mask = Popen(['mri_label2vol', '--subject', '%sfs'%(SUBJ),
+			'--label', '%srh.parahippocampal.label'%(label),
+			'--temp', '%srefvol.nii.gz'%(bold),
+			'--reg', '%sRegMat.dat'%(registration),
+			'--proj', 'frac', '0', '1', '.1',
+			'--fillthresh', '.3',
+			'--hemi', 'rh',
+			'--o', '%srh_PPA_fs.nii.gz'%(mask)],
+			env=env)
+			rhd1_mask.wait()
+			
+			#add the hemispheres together
+			print('Combining hemispheres via fslmaths...')
+			os.system('fslmaths %slh_PPA_fs.nii.gz -add %srh_PPA_fs.nii.gz -bin %sPPA_fs_mask.nii.gz'%(mask,mask,mask))
+
 		else:
 			print('All masks already exist')
 
+
 	#run motion correction
-	if args.motion_correct == True:
+	# if args.motion_correct == True:
 
-		#create the reference run (mean of the 1st run) if it does not exist
-		if 'refvol.nii.gz' not in os.listdir(bold):
-			os.system('fslmaths ' + day1 + 'run001/run001.nii.gz -Tmean ' + bold + 'refvol')
+	# 	#create the reference run (mean of the 1st run) if it does not exist
+	# 	if 'refvol.nii.gz' not in os.listdir(bold):
+	# 		os.system('fslmaths ' + day1 + 'run001/run001.nii.gz -Tmean ' + bold + 'refvol')
 
-		#find all the runs
-		runs_to_mc = glob('%s/day*/run00*/run00*.nii.gz'%(bold))
+	# 	#find all the runs
+	# 	runs_to_mc = glob('%s/day*/run00*/run00*.nii.gz'%(bold))
 
-		#make the names with mc_run000.nii.gz
-		mc_runs = [ ( run[:-13] + 'mc_' + run[-13:] ) for run in runs_to_mc ]
+	# 	#make the names with mc_run000.nii.gz
+	# 	mc_runs = [ ( run[:-13] + 'mc_' + run[-13:] ) for run in runs_to_mc ]
 
-		#combine those two things into a dictionary for ease
-		mc_index = { run:mc_runs[i] for i, run in enumerate(runs_to_mc) }
+	# 	#combine those two things into a dictionary for ease
+	# 	mc_index = { run:mc_runs[i] for i, run in enumerate(runs_to_mc) }
 
-		#run mcflirt (FSL motion correction)
-		[ ( print('Motion correcting %s'%(run[-13:-7])),
-			os.system('mcflirt -in %s -out %s -refvol %srefvol.nii.gz'%(run,mc_index[run],bold))
-			) for run in runs_to_mc ]
+	# 	#run mcflirt (FSL motion correction)
+	# 	[ ( print('Motion correcting %s'%(run[-13:-7])),
+	# 		os.system('mcflirt -in %s -out %s -refvol %srefvol.nii.gz'%(run,mc_index[run],bold))
+	# 		) for run in runs_to_mc ]
 
 
 	if args.transform == True:

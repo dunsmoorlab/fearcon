@@ -21,7 +21,7 @@ def plot_confusion_matrix(cm, classes,
 
     print('Generating confusion matrix:\n%s'%(title))
 
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.imshow(cm, interpolation='nearest', cmap=cmap, vmin=0, vmax=1)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
