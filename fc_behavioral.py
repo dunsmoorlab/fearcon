@@ -1,463 +1,626 @@
 import os
-import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import sys
 from scipy import stats
-from fc_config import data_dir, sub_args
-#script needs to be run from the 'fearcon pilot analysis' folder or it will not w0rk
-# After i get this to work once, go back and figure out how to add an optional argument to evaluate 
-# only high conffccridence hits.
-# current goal is to simply recreate the fearconCR.m script
+from scipy.stats import ttest_rel, ttest_ind
+from fc_config import *
+from preprocess_library import meta
 
-#set arguments
-parser = argparse.ArgumentParser(description='Function arguments')
-#set the subject argument as a string so that it can take arguments like '1' or 'all'
-parser.add_argument('-s','--subj', help='Subject number', default=00, type=str)
-args = parser.parse_args()
-
-# #point to the data direct
-# if sys.platform == 'linux':
-# 	#point bash to the folder with the subjects in
-# 	data_dir = '/mnt/c/Users/ACH/Google Drive/FC_FMRI_DATA/'
-# elif sys.platform == 'win32':
-# 	data_dir = 'C:\\Users\\ACH\\Google Drive\\FC_FMRI_DATA'
-# #but mostly it runs on a school mac
-# else:
-# 	data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/'
-
-#handle the subjects arg (all or one)
-if args.subj == 'all':
-	subj = sub_args
-	# subj = [int(subs[3:]) for subs in os.listdir(data_dir) if 'Sub' in subs and 'fs' not in subs]
-	iterations = len(subj)
-#if its not 'all' then we need to convert it into an int
-else:
-	subj = [int(args.subj)]
-	iterations = 1
+class recognition_memory():
 
 
-#Initialize some variables that will be the same for every subject in this experiment
-#this is number of rows in the merged csv file that correspond to day1, including the multiple rows of extinction
-day1_index = list(range(0,384))
-#this is the number of rows corresponding to just the recognition memroy runs
-phase5 = list(range(408,648))
+	def __init__(self, p=False, hch=False): 
 
-#before we get to the heavy lifting, we need to initialzie some variables to accept the results for each subject
-
-#If you're going to export to R or something, use these
-phase_cr = pd.DataFrame([],columns=['Phase','Condition','CR','SEM'])
-phase_cr['Phase'] = ['Baseline','Baseline','Fear_Conditioning','Fear_Conditioning','Extinction','Extinction','False_Alarm','False_Alarm']
-phase_cr['Condition'] = ['CS+','CS-','CS+','CS-','CS+','CS-','CS+','CS-',]
-#need this in the middle
-r_phase_cr = pd.DataFrame([])
-
-#Use this one if graphing in python
-phase_cr_long = pd.DataFrame([],columns=['Subj','Phase','Condition','CR'])
-
-#intialize variables for looking at CR by block
-block_cr = pd.DataFrame([],columns=['Phase','Block','Condition','CR','SEM'])
-block_cr['Phase'] = ['Baseline'] * 12 + ['Fear_Conditioning'] * 12 + ['Extinction'] * 12
-block_cr['Condition'] = ['CS+', 'CS-'] * 18
-block_cr['Block'] = ['Block_1']*2 + ['Block_2']*2 + ['Block_3']*2 + ['Block_4']*2 + ['Block_5']*2 + ['Block_6']*2 + ['Block_7']*2 + ['Block_8']*2 + ['Block_9']*2 + ['Block_10']*2 + ['Block_11']*2 + ['Block_12']*2 + ['Block_13']*2 + ['Block_14']*2 + ['Block_15']*2 + ['Block_16']*2 + ['Block_17']*2 + ['Block_18']*2 
-#need this in the middle
-r_block_cr = pd.DataFrame([])
+		if not p:
+			# self.sub_args = self.exclude_subs(old=sub_args, exclude=[])
+			self.sub_args = self.exclude_subs(old=sub_args, exclude=[18,20])
+		elif p:
+			# self.sub_args = self.exclude_subs(old=working_subs, exclude=[120])
+			self.sub_args = self.exclude_subs(old=p_sub_args, exclude=[])
 
 
-#and make one for graphing in python
-block_cr_long = pd.DataFrame([],columns=['Subj','Phase','Block','Condition','CR'])
+		self.create_output_structures()
 
-#initialize variables for shock expectancy
-#shock_expectancy = pd.DataFrame([],columns=['Phase','Trial','Response','Sum'])
-#shock_expectancy.Trial = list(range(1,121))
-#shock_expectancy.Phase[0:48] = ['Fear_Conditioning']*48
-#shock_expectancy.Phase[48:96] = ['Extinction']*48
-#shock_expectancy.Phase[96:120] = ['Extinction_Recall']*24
+		for sub in self.sub_args:
+			self.collect_mem_dat(sub, hch=hch)
+
+		self.mem_stats()
+		#self.vis_group_mem()
+
+	#exclude some subs
+	def exclude_subs(self, old=None, exclude=None):
+
+		print('excluding subs %s'%(exclude))
+
+		new_sub_args = np.array(old)
+
+		for sub in exclude:
+
+			new_sub_args = np.delete(new_sub_args, np.where(new_sub_args == sub)[0])
+
+		return list(new_sub_args)
 
 
-#do the analysis for each subject given
-for iteration in range(0,iterations):
-	#load in the merged csv file for each subect
-	meta = pd.read_csv(data_dir + os.sep + "Sub{0:0=3d}".format(subj[iteration]) + os.sep + 'behavior' + os.sep + "Sub{0:0=3d}_elog.csv".format(subj[iteration]))
-	#say which subject is loading
-	print('loading data from subject {0:0=3d}'.format(subj[iteration]))
+	#create output structures for collecting results
+	def create_output_structures(self):
 
-	#collect the raw responses from the recognition test
-	respconv = meta['oldnew.RESP'][phase5]
-	#fill in any non-responses with 0
-	respconv = respconv.fillna(0)
-	#collect the old/new attribute for each stim
-	memcond = meta.MemCond[phase5]
-	#collect the CS type for each stim
-	condition = meta.cstype
+		self.memory_phase = ['baseline','fear_conditioning','extinction','false_alarm']
+		self.block_phases = ['baseline','fear_conditioning','extinction']
+		cs_condition = ['CS+','CS-']
+		self.block_6 = range(1,7,1)
 
-	#collect stims from baseline and fear conditioning
-	phase1_2_stims = meta.stims[0:96]
+		self.phase_err = pd.DataFrame(index=pd.MultiIndex.from_product(
+								[self.memory_phase, cs_condition],
+								names=['phase','condition']),
+								columns=['cr','err'])
 
-	#do the same for extinction, but also undo the dumb row expansion that e-prime does with the scene ITIs
-	phase3_stims = pd.Series(0)
-	phase3_unique_loc = pd.Series(0)
-	q = 0
-	#this paragraph goes through all the stims and extinciton
-	#and collects unique stim names in their experimental order
-	for loc, unique in enumerate(meta.stims[meta.phase == 'extinction']):
-		if not any(stim == unique for stim in phase3_stims):
-			phase3_stims[q] = unique
-			phase3_unique_loc[q] = loc + 96
-			q = q + 1
-	#give it the correct index numbering
-	phase3_stims.index = list(range(96,144))
-	
-	#concatenate all stims from day1
-	day1_stims = pd.Series(np.zeros(144))
-	day1_stims[0:96] = phase1_2_stims
-	day1_stims[96:144] = phase3_stims
+		self.block_cr = pd.DataFrame(index=pd.MultiIndex.from_product(
+								[self.sub_args, self.block_phases, self.block_6, cs_condition],
+								names=['subject','phase','block','condition']),
+								columns=['cr','hit_count','hit_rate'])
 
-	#collect the stims from day2, phase5 (much easier)
-	day2_stims = meta.stims[phase5]
+		self.f_a = pd.DataFrame(index=pd.MultiIndex.from_product(
+								[self.sub_args, ['false_alarm'], cs_condition],
+								names=['subject','phase','condition']),
+								columns=['cr'])
 
-	#get rid of 'stims/' and 'stims2/' in both so they can be compared
-	day1_stims = day1_stims.str.replace('stims/','')
-	day2_stims = day2_stims.str.replace('stims2/','')
+		self.block_cr.hit_count = 0
+		self.block_cr.sort_index(inplace=True)
 
-	#lastely, make a variable for all of the day1 conditions, counter-acting how eprime fucks up extinciton
-	day1_condition = pd.Series(np.zeros(144))
-	day1_condition[0:96] = condition[0:96]
-	day1_condition[96:144] = condition[phase3_unique_loc]
 
-	#fix my big ol mistake
-	#if meta.ExperimentName[1][0] == 'T':
-	#	for con in meta.cstype[phase5].index:
-	#		
-	#		if meta.condition[con] == 'animal':
-	#			condition.loc[con] = 'CS-'
-	#		
-	#		if meta.condition[con] == 'tool':
-	#			condition.loc[con] = 'CS+'
+	def collect_mem_dat(self, sub, hch=True, exp_res=False, exp_day1=False):
 
-	#now lets look at their responses
-	#set up some variables to translate raw responses into meaning
-	correct_rejection = np.zeros(0)
-	false_alarm = np.zeros(0)
-	miss = np.zeros(0)
-	hit = np.zeros(0)
+		#this is the number of rows corresponding to just the recognition memroy runs
+		phase5 = list(range(408,648))
+		#create a series that labels the index of the trials with the name of the phase
+		_phase_name = np.array(((['baseline'] * 48) + (['fear_conditioning'] * 48) + (['extinction'] * 48)))
+		_block_index = np.tile(np.repeat((1,2,3,4,5,6),8),3)
+		day1_index = pd.DataFrame([],index=range(144),columns=['phase','block'])
+		day1_index.phase = _phase_name
+		day1_index.block = _block_index
 
-	#convert raw response into meaning
-	#right now this isn't built to seperate out confidence, this is where that would have to happen
-	for i in day2_stims.index:
-		#if its new, has to be either CR or FA
-		if memcond[i] == 'New':
-			#non-responses get counted as correct rejection if its new
-			if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0:
-				correct_rejection = np.append(correct_rejection, respconv.index[i-408])
+		#load in subjects meta data file (e-prime log)
+		sub_meta = meta(sub).meta
+		#collect the raw responses from the recognition test
+		respconv = sub_meta['oldnew.RESP'][phase5]
+		#fill in any non-responses with 0
+		respconv = respconv.fillna(0)
+		#collect the old/new attribute for each stim
+		memcond = sub_meta.MemCond[phase5]
+		#collect the CS type for each stim
+		condition = sub_meta.cstype
+
+		#collect stims from baseline and fear conditioning
+		phase1_2_stims = sub_meta.stims[0:96]
+		phase1_stims = phase1_2_stims[0:48]
+		phase2_stims = phase1_2_stims[48:96]
+		
+		#do the same for extinction, but also undo the dumb row expansion that e-prime does with the scene ITIs
+		phase3_stims = pd.Series(0)
+		phase3_unique_loc = pd.Series(0)
+		q = 0
+
+		#this paragraph goes through all the stims and extinciton
+		#and collects unique stim names in their experimental order
+		for loc, unique in enumerate(sub_meta.stims[sub_meta.phase == 'extinction']):
+			if not any(stim == unique for stim in phase3_stims):
+				phase3_stims[q] = unique
+				phase3_unique_loc[q] = loc + 96
+				q = q + 1
+
+		#give it the correct index numbering
+		phase3_stims.index = list(range(96,144))
+		
+		#concatenate all stims from day1
+		day1_stims = pd.Series(np.zeros(144))
+		day1_stims[0:96] = phase1_2_stims
+		day1_stims[96:144] = phase3_stims
+
+		#collect the stims from day2, phase5 (much easier)
+		day2_stims = sub_meta.stims[phase5]
+
+		#get rid of 'stims/' and 'stims2/' in both so they can be compared
+		day1_stims = day1_stims.str.replace('stims/','')
+		day2_stims = day2_stims.str.replace('stims2/','')
+
+		#lastely, make a variable for all of the day1 conditions, counter-acting how eprime fucks up extinciton
+		day1_condition = pd.Series(np.zeros(144))
+		day1_condition[0:96] = condition[0:96]
+		day1_condition[96:144] = condition[phase3_unique_loc]
+
+		#now lets look at their responses
+		#set up some variables to translate raw responses into meaning
+		correct_rejection = np.zeros(0)
+		false_alarm = np.zeros(0)
+		miss = np.zeros(0)
+		hit = np.zeros(0)
+		print('%s has %s non-responses'%(sub, len(np.where(respconv == 0)[0])))
+		
+		#convert raw response into meaning
+		#right now this isn't built to seperate out confidence, this is where that would have to happen
+		for i in day2_stims.index:
 			
-			elif respconv[i] == 3 or respconv[i] == 4:
-				false_alarm = np.append(false_alarm, respconv.index[i-408])
+			if not hch:
+
+				#if its new, has to be either CR or FA
+				if memcond[i] == 'New':
+					#non-responses get counted as correct rejection if its new
+					if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0:
+						correct_rejection = np.append(correct_rejection, respconv.index[i-408])
+					
+					elif respconv[i] == 3 or respconv[i] == 4:
+						false_alarm = np.append(false_alarm, respconv.index[i-408])
+
+				elif memcond[i] == 'Old':
+				#non-responses get counted as misses if they're old
+					if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0:
+						miss = np.append(miss, respconv.index[i-408])
+					
+					elif respconv[i] == 3 or respconv[i] == 4:
+						hit = np.append(hit, respconv.index[i-408])
 		
-		elif memcond[i] == 'Old':
-			#non-responses get counted as misses if they're old
-			if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0:
-				miss = np.append(miss, respconv.index[i-408])
+
+			if hch:
 			
-			elif respconv[i] == 3 or respconv[i] == 4:
-				hit = np.append(hit, respconv.index[i-408])
-
-	#count up old and new 
-	#(I could do this manually since these shouldn't change, but I'm paranoid and this is my check_sum)
-	old = len(memcond[memcond == 'Old'])
-	new = len(memcond[memcond == 'New'])
-
-	#calculate overall false alarm rate by condition
-	CSplus_false_alarm_rate = len(condition[false_alarm][condition == 'CS+']) / (new /2)
-	CSmin_false_alarm_rate = len(condition[false_alarm][condition == 'CS-']) / (new /2)
-
-	#calculate overall hit rate by condition
-	CSplus_hit_rate = len(condition[hit][condition == 'CS+']) / (old/2)
-	CSmin_hit_rate = len(condition[hit][condition == 'CS-']) / (old/2)
-
-	#calculate overall corrected recognition by condition
-	CSplus_corrected_recognition = CSplus_hit_rate - CSplus_false_alarm_rate
-	CSmin_corrected_recognition = CSmin_hit_rate - CSmin_false_alarm_rate
+				#if its new, has to be either CR or FA
+				if memcond[i] == 'New':
+					#non-responses get counted as correct rejection if its new
+					if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0 or respconv[i] == 3:
+						correct_rejection = np.append(correct_rejection, respconv.index[i-408])
+					
+					elif respconv[i] == 4:
+						false_alarm = np.append(false_alarm, respconv.index[i-408])
 
 
-	#lets break it up into phase
-	#since false alarm rate isn't calculate phase by phase, all we need are the location of the hits on day1
-	hit_index = []
-	[[hit_index.append(i) for i, stim in enumerate(day1_stims) if stim == day2_stims[target]] for target in hit]
+				elif memcond[i] == 'Old':
+				
+					if respconv[i] == 1 or respconv[i] == 2 or respconv[i] == 0 or respconv[i] == 3:
+						miss = np.append(miss, respconv.index[i-408])
+				
+					elif respconv[i] == 4:
+						hit = np.append(hit, respconv.index[i-408])
 
-	#the next section goes through each block in each phase and totals up the hits
-	
-	#these variables store the hit count for each block,
-	#they are in the format [CS+ hits, CS- hits]
-	#first phase
-	blk1_1 = [0,0]
-	blk1_2 = [0,0]
-	blk1_3 = [0,0]
-	blk1_4 = [0,0]
-	blk1_5 = [0,0]
-	blk1_6 = [0,0]
+		if exp_res:
+			day1_where = pd.Series(np.zeros(len(day2_stims)))
+			day1_where.index = day2_stims.index
+			for i in day2_stims.index:
+				stim = day2_stims[i]
+				where = np.where(day1_stims == stim)[0]
+				if len(where) == 0:
+					day1_where[i] = 'foil'
+				else:
+					day1_where[i] = day1_index.loc[where,'phase'].values[0]
+			return respconv, memcond, day1_where
+			sys.exit()
 
-	#second phase
-	blk2_1 = [0,0]
-	blk2_2 = [0,0]
-	blk2_3 = [0,0]
-	blk2_4 = [0,0]
-	blk2_5 = [0,0]
-	blk2_6 = [0,0]
+		#count up old and new 
+		#(I could hardcode these values since they shouldn't change, but I'm paranoid and this is my check_sum)
+		old = len(memcond[memcond == 'Old'])
+		new = len(memcond[memcond == 'New'])
 
-	#third phase
-	blk3_1 = [0,0]
-	blk3_2 = [0,0]
-	blk3_3 = [0,0]
-	blk3_4 = [0,0]
-	blk3_5 = [0,0]
-	blk3_6 = [0,0]
+		#lets break it up into phase
+		#since false alarm rate isn't calculate phase by phase, all we need are the location of the hits on day1
+		hit_index = []
+		[[hit_index.append(i) for i, stim in enumerate(day1_stims) if stim == day2_stims[target]] for target in hit]
 
-	#for each stim, take its location from day1 and find its correct block
-	#then sum the hits by condition
-	for stim in hit_index:
-		#phase1, baseline
-		if stim < 8:
-			if day1_condition[stim] == 'CS+':
-				blk1_1[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_1[1] += 1
-		elif stim >= 8 and stim < 16:
-			if day1_condition[stim] == 'CS+':
-				blk1_2[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_2[1] += 1
-		elif stim >= 16 and stim < 24:
-			if day1_condition[stim] == 'CS+':
-				blk1_3[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_3[1] += 1
-		elif stim >= 24 and stim < 32:
-			if day1_condition[stim] == 'CS+':
-				blk1_4[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_4[1] += 1
-		elif stim >= 32 and stim < 40:
-			if day1_condition[stim] == 'CS+':
-				blk1_5[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_5[1] += 1
-		elif stim >= 40 and stim < 48:
-			if day1_condition[stim] == 'CS+':
-				blk1_6[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk1_6[1] += 1
+		if exp_day1:
+			if exp_day1 == 'baseline':
+				comp_stims = phase1_stims
+			elif exp_day1 == 'fear_conditioning':
+				comp_stims = phase2_stims
+			elif exp_day1 == 'extinction':
+				comp_stims = phase3_stims
 		
-		#phase2, fear day1_conditioning
-		elif stim >= 48 and stim < 56:
-			if day1_condition[stim] == 'CS+':
-				blk2_1[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_1[1] += 1
-		elif stim >= 56 and stim < 64:
-			if day1_condition[stim] == 'CS+':
-				blk2_2[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_2[1] += 1
-		elif stim >= 64 and stim < 72:
-			if day1_condition[stim] == 'CS+':
-				blk2_3[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_3[1] += 1
-		elif stim >= 72 and stim < 80:
-			if day1_condition[stim] == 'CS+':
-				blk2_4[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_4[1] += 1
-		elif stim >= 80 and stim < 88:
-			if day1_condition[stim] == 'CS+':
-				blk2_5[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_5[1] += 1
-		elif stim >= 88 and stim < 96:
-			if day1_condition[stim] == 'CS+':
-				blk2_6[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk2_6[1] += 1
+			day1_memory=pd.Series(np.zeros(len(comp_stims)))
+			for i, stim in enumerate(comp_stims.index):
+				if stim in hit_index:
+					day1_memory[i] = 'hit'
+				else:
+					day1_memory[i] = 'miss'
+
+			return day1_memory
+			sys.exit()
+
+
+		# calculate overall false alarm rate by condition
+		CSplus_false_alarm_rate = len(condition[false_alarm][condition == 'CS+']) / (new /2)
+		CSmin_false_alarm_rate = len(condition[false_alarm][condition == 'CS-']) / (new /2)
+
+		self.f_a['cr'][sub]['false_alarm']['CS+'] = CSplus_false_alarm_rate
+		self.f_a['cr'][sub]['false_alarm']['CS-'] = CSmin_false_alarm_rate
+
+
+		#loop through all the hits and tally them up block by block
+		for stim in hit_index:
+			self.block_cr['hit_count'][sub][day1_index['phase'][stim]][day1_index['block'][stim]][day1_condition[stim]] += 1
+
+		for phase in self.block_phases:
+			for block in self.block_6:
+				self.block_cr['cr'][sub][phase][block]['CS+'] = ( (self.block_cr['hit_count'][sub][phase][block]['CS+'] / 4) - CSplus_false_alarm_rate)
+				self.block_cr['cr'][sub][phase][block]['CS-'] = ( (self.block_cr['hit_count'][sub][phase][block]['CS-'] / 4) - CSmin_false_alarm_rate)
+				self.block_cr['hit_rate'][sub][phase][block]['CS+'] = (self.block_cr['hit_count'][sub][phase][block]['CS+'] / 4)
+				self.block_cr['hit_rate'][sub][phase][block]['CS-'] = (self.block_cr['hit_count'][sub][phase][block]['CS-'] / 4)
+	#combine subject results into group results
+	def mem_stats(self):
+		#reset first and then melt them and then see if you cant get all 4 phases in the same graph
+
+		self.phase_cr = self.block_cr.unstack(level=2)
+		self.phase_cr = self.phase_cr['cr'].mean(axis=1)
+		self.phase_cr = self.phase_cr.reset_index()
+		self.phase_cr.rename(columns={0:'cr'}, inplace=True)
+
+		self.phase_hr = self.block_cr.unstack(level=2)
+		self.phase_hr = self.phase_hr['hit_rate'].mean(axis=1)
+		self.phase_hr = self.phase_hr.reset_index()
+		self.phase_hr.rename(columns={0:'hit_rate'}, inplace=True)
+
+
+		self._f_a = self.f_a.copy()
+		self._f_a.reset_index(inplace=True)
+		self.phase_cr = self.phase_cr.append(self._f_a)
+
+		self.hr_fa = self._f_a.copy()
+		self.hr_fa.rename(columns={'cr':'hit_rate'}, inplace=True)
+		self.phase_hr = self.phase_hr.append(self.hr_fa)
+
+		_phases = pd.Categorical(self.phase_cr['phase'],
+					categories=self.memory_phase, ordered=True)
+		self.phase_cr['phase'] = _phases
+		self.phase_cr.sort_values(['phase','subject'], inplace=True)
 		
-		#phase3, extinction
-		elif stim >= 96 and stim < 104:
-			if day1_condition[stim] == 'CS+':
-				blk3_1[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_1[1] += 1
-		elif stim >= 104 and stim < 112:
-			if day1_condition[stim] == 'CS+':
-				blk3_2[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_2[1] += 1
-		elif stim >= 112 and stim < 120:
-			if day1_condition[stim] == 'CS+':
-				blk3_3[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_3[1] += 1
-		elif stim >= 120 and stim < 128:
-			if day1_condition[stim] == 'CS+':
-				blk3_4[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_4[1] += 1
-		elif stim >= 128 and stim < 136:
-			if day1_condition[stim] == 'CS+':
-				blk3_5[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_5[1] += 1
-		elif stim >= 136 and stim < 144:
-			if day1_condition[stim] == 'CS+':
-				blk3_6[0] += 1
-			elif day1_condition[stim] == 'CS-':
-				blk3_6[1] += 1
+		_phases = pd.Categorical(self.phase_hr['phase'],
+					categories=self.memory_phase, ordered=True)
+		self.phase_hr['phase'] = _phases
+		self.phase_hr.sort_values(['phase','subject'], inplace=True)
 
 
-	#now we need to convert the [block hit counts] into corrected recognition rates! 
-	#so were going to dived each hit count by 4, and then subtract the appropriate CS false_alarm rate for each condition
-	#phase1
-	blk1_1[0] = (blk1_1[0] / 4) - CSplus_false_alarm_rate
-	blk1_1[1] = (blk1_1[1] / 4) - CSmin_false_alarm_rate
-	blk1_2[0] = (blk1_2[0] / 4) - CSplus_false_alarm_rate
-	blk1_2[1] = (blk1_2[1] / 4) - CSmin_false_alarm_rate
-	blk1_3[0] = (blk1_3[0] / 4) - CSplus_false_alarm_rate
-	blk1_3[1] = (blk1_3[1] / 4) - CSmin_false_alarm_rate
-	blk1_4[0] = (blk1_4[0] / 4) - CSplus_false_alarm_rate
-	blk1_4[1] = (blk1_4[1] / 4) - CSmin_false_alarm_rate
-	blk1_5[0] = (blk1_5[0] / 4) - CSplus_false_alarm_rate
-	blk1_5[1] = (blk1_5[1] / 4) - CSmin_false_alarm_rate
-	blk1_6[0] = (blk1_6[0] / 4) - CSplus_false_alarm_rate
-	blk1_6[1] = (blk1_6[1] / 4) - CSmin_false_alarm_rate
+		_err_ = self.block_cr.unstack(level=(0,-2))
+		self.f_a = self.f_a.unstack(level=0)
 
-	#phase2
-	blk2_1[0] = (blk2_1[0] / 4) - CSplus_false_alarm_rate
-	blk2_1[1] = (blk2_1[1] / 4) - CSmin_false_alarm_rate
-	blk2_2[0] = (blk2_2[0] / 4) - CSplus_false_alarm_rate
-	blk2_2[1] = (blk2_2[1] / 4) - CSmin_false_alarm_rate
-	blk2_3[0] = (blk2_3[0] / 4) - CSplus_false_alarm_rate
-	blk2_3[1] = (blk2_3[1] / 4) - CSmin_false_alarm_rate
-	blk2_4[0] = (blk2_4[0] / 4) - CSplus_false_alarm_rate
-	blk2_4[1] = (blk2_4[1] / 4) - CSmin_false_alarm_rate
-	blk2_5[0] = (blk2_5[0] / 4) - CSplus_false_alarm_rate
-	blk2_5[1] = (blk2_5[1] / 4) - CSmin_false_alarm_rate
-	blk2_6[0] = (blk2_6[0] / 4) - CSplus_false_alarm_rate
-	blk2_6[1] = (blk2_6[1] / 4) - CSmin_false_alarm_rate
+		for phase in self.memory_phase:
+			if phase == 'false_alarm':
+				self.phase_err['cr'][phase] = self.f_a['cr'].mean(axis=1)
+				self.phase_err['err'][phase] = self.f_a['cr'].sem(axis=1)
+			else:
+				self.phase_err['cr'][phase] = _err_['cr'].loc[phase].mean(axis=1)
+				self.phase_err['err'][phase] = _err_['cr'].loc[phase].sem(axis=1)
 
-	#phase3
-	blk3_1[0] = (blk3_1[0] / 4) - CSplus_false_alarm_rate
-	blk3_1[1] = (blk3_1[1] / 4) - CSmin_false_alarm_rate
-	blk3_2[0] = (blk3_2[0] / 4) - CSplus_false_alarm_rate
-	blk3_2[1] = (blk3_2[1] / 4) - CSmin_false_alarm_rate
-	blk3_3[0] = (blk3_3[0] / 4) - CSplus_false_alarm_rate
-	blk3_3[1] = (blk3_3[1] / 4) - CSmin_false_alarm_rate
-	blk3_4[0] = (blk3_4[0] / 4) - CSplus_false_alarm_rate
-	blk3_4[1] = (blk3_4[1] / 4) - CSmin_false_alarm_rate
-	blk3_5[0] = (blk3_5[0] / 4) - CSplus_false_alarm_rate
-	blk3_5[1] = (blk3_5[1] / 4) - CSmin_false_alarm_rate
-	blk3_6[0] = (blk3_6[0] / 4) - CSplus_false_alarm_rate
-	blk3_6[1] = (blk3_6[1] / 4) - CSmin_false_alarm_rate
+		self.phase_err.reset_index(inplace=True)
 
+		self.phase_stats = self.phase_cr.set_index(['phase','condition'])
+
+		self.phase_t = pd.DataFrame(index=self.memory_phase, columns=['tstat','pval'])
+
+		for phase in self.memory_phase:
+			
+			self.phase_t['tstat'][phase], self.phase_t['pval'][phase] = ttest_rel(self.phase_stats['cr'][phase]['CS+'], self.phase_stats['cr'][phase]['CS-'])
+
+		print(self.phase_t)
+
+	def vis_group_mem(self,title=None):
+
+		fig, pp = plt.subplots()
+		pp = sns.pointplot(data=self.phase_cr, x='phase', y='cr',
+							hue='condition', kind='point',
+							palette='husl',
+							dodge=True, join=False)
+		pretty_graph(ax=pp, xlab='Phase', ylab='Corrected Recognition', main='Corrected Recognition by Phase')
+		# fig.savefig('%s/%s_bootstrap_CR'%(data_dir + 'graphing' + os.sep + 'behavior', title))
+
+
+		fig2, bx = plt.subplots()
+		self.phase_cr['cr'] = self.phase_cr['cr'].astype(np.float)
+		bx = sns.boxplot(data=self.phase_cr, x='phase', y='cr',
+						hue='condition', palette='husl')
+		bx = sns.stripplot(data=self.phase_cr, x='phase', y='cr',
+						hue='subject', palette='husl')
+		pretty_graph(ax=bx, xlab='Phase', ylab='Corrected Recognition', main='Corrected Recognition by Phase')
+		# fig2.savefig('%s/%s_CR_boxplot'%(data_dir + 'graphing' + os.sep + 'behavior', title))
+
+
+		fig3, sw = plt.subplots()
+		sw = sns.factorplot(data=self.phase_cr, x='condition', y='cr',
+							col='phase', hue='subject',
+							kind='box', palette='hls')
+
+		st = sns.factorplot(data=self.phase_cr, x='condition', y='cr',
+							col='phase', hue='subject',
+							kind='strip', palette='hls')
+		# add annotations one by one with a loop
+		for line in range(0,self.phase_cr.shape[0]):
+			st.text(self.phase_cr.condition[line]+0.2, self.phase_cr.cr[line], self.phase_cr.subejct[line], horizontalalignment='left', size='medium', color='black', weight='semibold')
+		# plt.savefig('%s/%s_CR_swarmplot'%(data_dir + 'graphing' + os.sep + 'behavior', title))
 	
-	#now create some results structures to send out
+		sns.set_style('whitegrid')
+		sns.set_style('ticks')
+		# sns.set_style(rc={'axes.linewidth':'5'})
+		# plt.rcParams['xtick.labelsize'] = 22 
+		# plt.rcParams['ytick.labelsize'] = 22
 
-	#first average corrected recognition by phase and condition
-	baseline_csplus = np.mean([blk1_1[0],blk1_2[0],blk1_3[0],blk1_4[0],blk1_5[0],blk1_6[0]])
-	baseline_csmin = np.mean([blk1_1[1],blk1_2[1],blk1_3[1],blk1_4[1],blk1_5[1],blk1_6[1]])
+		
+		fig, ax = plt.subplots()
+		ind = np.arange(3)    # the x locations for the groups
+		width = 0.4         # the width of the bars
+		
+		#for now dont plot false alarm
+		self.phase_err_ = self.phase_err[:6]
+		csp = self.phase_err_.loc[np.where(self.phase_err_['condition'] == 'CS+')[0]]
+		csm = self.phase_err_.loc[np.where(self.phase_err_['condition'] == 'CS-')[0]]
 
-	fearcond_csplus = np.mean([blk2_1[0],blk2_2[0],blk2_3[0],blk2_4[0],blk2_5[0],blk2_6[0]])
-	fearcond_csmin = np.mean([blk2_1[1],blk2_2[1],blk2_3[1],blk2_4[1],blk2_5[1],blk2_6[1]])
+		p1 = ax.bar(ind, csp['cr'], width, yerr=(csp['err']), color=plt.cm.Set1.colors[0], alpha=.8)
+		p2 = ax.bar(ind+width, csm['cr'], width, yerr=(csm['err']), color=plt.cm.Set1.colors[1], alpha=.8)
+		ax.set_xticks(ind + width / 2)
+		ax.set_xticklabels(self.memory_phase)
+		ax.set_ylim([0,.7])
+		# pretty_graph(ax=ax, xlab='Phase', ylab='Corrected Recognition', main='CR by Phase with SEM', legend=True)
+		# ax.legend((p1[0], p2[0]), ('CS+', 'CS-'), fontsize='larger')
+		fig.set_size_inches(9, 5.5)
+		plt.tight_layout()
+		plt.savefig(os.path.join(data_dir,'graphing', 'cns', 'hch_CR_mem.png'))
 
-	extinction_csplus = np.mean([blk3_1[0],blk3_2[0],blk3_3[0],blk3_4[0],blk3_5[0],blk3_6[0]])
-	extinction_csmin = np.mean([blk3_1[1],blk3_2[1],blk3_3[1],blk3_4[1],blk3_5[1],blk3_6[1]])
-
-
-	#left it off here, basically im trying to recreate the variabe 'scg' in my R graphing script
-		#dont forget to include false alarm rate in your ourput with phase
-	
-	data_byphase = pd.Series([baseline_csplus,baseline_csmin,fearcond_csplus,fearcond_csmin,extinction_csplus,extinction_csmin,CSplus_false_alarm_rate,CSmin_false_alarm_rate])
-
-	#R-graphing
-	r_phase_cr[iteration] = data_byphase
-
-
-	#python-graphing
-	ind_phase_cr = pd.DataFrame([],columns=['Subj','Phase','Condition','CR'])
-	ind_phase_cr['Phase'] = ['Baseline','Baseline','Fear_Conditioning','Fear_Conditioning','Extinction','Extinction','False_Alarm','False_Alarm']
-	ind_phase_cr['Condition'] = ['CS+','CS-','CS+','CS-','CS+','CS-','CS+','CS-',]
-	ind_phase_cr['CR'] = data_byphase
-	ind_phase_cr['Subj'] =  iteration + 1 
-	
-	phase_cr_long = pd.concat([phase_cr_long,ind_phase_cr])
-
-	#do the same thing by block
-
-	data_byblock = pd.Series([blk1_1[0] , blk1_1[1] , blk1_2[0] , blk1_2[1] , blk1_3[0], blk1_3[1],blk1_4[0] ,blk1_4[1] ,blk1_5[0] , blk1_5[1] , blk1_6[0] , blk1_6[1] ,blk2_1[0] , blk2_1[1] , blk2_2[0], blk2_2[1] ,blk2_3[0], blk2_3[1] , blk2_4[0] ,blk2_4[1] , blk2_5[0] , blk2_5[1], blk2_6[0] ,blk2_6[1] , blk3_1[0] ,blk3_1[1] , blk3_2[0] , blk3_2[1] , blk3_3[0], blk3_3[1] , blk3_4[0] ,blk3_4[1] , blk3_5[0] , blk3_5[1] , blk3_6[0] , blk3_6[1]])
-
-	r_block_cr[iteration] = data_byblock
+		#ToDO - graph block results
 
 
-	ind_block_cr = pd.DataFrame([],columns=['Subj','Phase','Block','Condition','CR'])
-	ind_block_cr['Phase'] = ['Baseline'] * 12 + ['Fear_Conditioning'] * 12 + ['Extinction'] * 12
-	ind_block_cr['Condition'] = ['CS+', 'CS-'] * 18
-	ind_block_cr['Block'] = ['Block_1']*2 + ['Block_2']*2 + ['Block_3']*2 + ['Block_4']*2 + ['Block_5']*2 + ['Block_6']*2 + ['Block_7']*2 + ['Block_8']*2 + ['Block_9']*2 + ['Block_10']*2 + ['Block_11']*2 + ['Block_12']*2 + ['Block_13']*2 + ['Block_14']*2 + ['Block_15']*2 + ['Block_16']*2 + ['Block_17']*2 + ['Block_18']*2 
-	ind_block_cr['Subj'] = [subj[iteration]] * 36
-	ind_block_cr['CR'] = blk1_1[0] , blk1_1[1] , blk1_2[0] , blk1_2[1] , blk1_3[0], blk1_3[1],blk1_4[0] ,blk1_4[1] ,blk1_5[0] , blk1_5[1] , blk1_6[0] , blk1_6[1] ,blk2_1[0] , blk2_1[1] , blk2_2[0], blk2_2[1] ,blk2_3[0], blk2_3[1] , blk2_4[0] ,blk2_4[1] , blk2_5[0] , blk2_5[1], blk2_6[0] ,blk2_6[1] , blk3_1[0] ,blk3_1[1] , blk3_2[0] , blk3_2[1] , blk3_3[0], blk3_3[1] , blk3_4[0] ,blk3_4[1] , blk3_5[0] , blk3_5[1] , blk3_6[0] , blk3_6[1]
+class shock_expectancy():
 
-	block_cr_long = pd.concat([block_cr_long, ind_block_cr])
+	def __init__(self,p=False):
+
+		if p == True:
+			self.sub_args = p_sub_args
+			self.ptsd = True
+		elif p == False:
+			self.sub_args = sub_args
+			self.ptsd = False
+		if p == 'all':
+			self.sub_args = all_sub_args
+			self.ptsd = False
+
+		self.create_output_structures()
+		
+		for sub in self.sub_args:
+			self.collect_expectancy(sub)
+
+		self.exp_stats()
+		# self.vis_phase_exp()
+
+	def create_output_structures(self):
+		self.cs_condition = ['CS+','CS-']
+
+		self.exp_phases = ['fear_conditioning','extinction','extinction_recall']
+
+		self.phase_exp = {}
+		for sub in self.sub_args:
+			self.phase_exp[sub] = {}
+			for phase in self.exp_phases:
+				self.phase_exp[sub][phase] = {}
+				if phase == 'extinction_recall':
+					for con in self.cs_condition:
+						self.phase_exp[sub][phase][con] = {}
+						for i in range(1,13):
+							self.phase_exp[sub][phase][con][i] = {}
+				else:
+					for con in self.cs_condition:
+						self.phase_exp[sub][phase][con] = {}
+						for i in range(1,25):
+							self.phase_exp[sub][phase][con][i] = {}
+
+		self.prop_exp = {}
+		for phase in self.exp_phases:
+			self.prop_exp[phase] = {}
+			if phase == 'extinction_recall':
+				for con in self.cs_condition:
+					self.prop_exp[phase][con] = {}
+					for i in range(1,13):
+						self.prop_exp[phase][con][i] = {}
+			else:
+				for con in self.cs_condition:
+					self.prop_exp[phase][con] = {}
+					for i in range(1,25):
+						self.prop_exp[phase][con][i] = {}
+
+	def collect_expectancy(self, sub):
+
+		sub_meta = meta(sub).meta
+
+		#collect index for fear and ER, and use the paragraph for finding extinction
+		phase2_loc = np.where(sub_meta.phase == 'fearconditioning')[0]
+		phase4_loc = np.where(sub_meta.phase == 'extinctionRecall')[0]
 
 
-	#now that we've done memory, lets look at shock expectancy
-	#this will involve their responses (1 or 2) during fear conditioning, extinction, and extinction recall
-	#fear conditioning is easy
-	#fear_shock = meta['stim.RESP'][meta.phase == 'fearconditioning'][meta.cstype == 'CS+']
-	#extinction, we need to use the location of the first line of each trial from the eprime log
-	#ext_shock = meta['stim.RESP'][phase3_unique_loc][meta.cstype == 'CS+']
-	#extinction recall
-	#exre_shock = meta['stim.RESP'][meta.phase == 'extinctionRecall'][meta.cstype == 'CS+']
+		#this paragraph goes through all the stims and extinciton
+		#and collects unique stim names in their experimental order
+		phase3_stims = pd.Series(0)
+		phase3_loc = pd.Series(0)
+		q = 0
+		for loc, unique in enumerate(sub_meta.stims[sub_meta.phase == 'extinction']):
+			if not any(stim == unique for stim in phase3_stims):
+				phase3_stims[q] = unique
+				phase3_loc[q] = loc + 96
+				q = q + 1
+		phase3_loc = np.array(phase3_loc)
 
-	#shock_expectancy = pd.Series(np.zeros(60))
-	#shock_expectancy[0:24] = fear_shock
-	#shock_expectancy[24:48] = ext_shock
-	#shock_expectancy[48:60] = exre_shock
+		_phase2 = {'resp':sub_meta['stim.RESP'][phase2_loc], 'condition': sub_meta['cstype'][phase2_loc], 'cs_trial': sub_meta['cstypebytrial'][phase2_loc]}
+		phase2 = pd.DataFrame(_phase2)
+		phase2.index = range(1,49)
+		phase2.fillna(0,inplace=True)
 
-	#expect_sum = []
-	#run_sum = 0
-	#for expect in shock_expectancy:
-	#	if expect == 1:
-	#		run_sum += 1
-	#	elif expect == 2:
-	#		run_sum -= 1
-	#	expect_sum.append(run_sum)
+		_phase3 = {'resp':sub_meta['stim.RESP'][phase3_loc], 'condition': sub_meta['cstype'][phase3_loc], 'cs_trial': sub_meta['cstypebytrial'][phase3_loc]}
+		phase3 = pd.DataFrame(_phase3)
+		phase3.index = range(1,49)
+		phase3.fillna(0,inplace=True)
 
-	#shock_expectancy['Response'] = pd.concat(fear_shock, ext_shock, exre_shock)
-	#shock_expectancy.Response[0:48] = fear_shock
-	#shock_expectancy.Response[48:96] = ext_shock
-	#shock_expectancy.Response[96:120] = exre_shock
+		_phase4 = {'resp':sub_meta['stim.RESP'][phase4_loc], 'condition': sub_meta['cstype'][phase4_loc], 'cs_trial': sub_meta['cstypebytrial'][phase4_loc]}
+		phase4 = pd.DataFrame(_phase4)
+		phase4.index = range(1,25)
+		phase4.fillna(0,inplace=True)
 
-
-
-
+		non_responses = len(np.where(phase2['resp'] == 0)[0]) + len(np.where(phase3['resp'] == 0)[0]) + len(np.where(phase4['resp'] == 0)[0])
+		print('%s has %s non-responses'%(sub, non_responses))
 
 
+		for phase in self.exp_phases:
+			
+			if phase == 'fear_conditioning':
+				for r in phase2.index:
+					self.phase_exp[sub][phase][phase2['condition'][r]][int(phase2['cs_trial'][r][-2:])] = {}
+					if phase2['resp'][r] == 1:
+						self.phase_exp[sub][phase][phase2['condition'][r]][int(phase2['cs_trial'][r][-2:])]['exp'] = 1
+					
+					elif phase2['resp'][r] == 2 or phase2['resp'][r] == 0:
+						self.phase_exp[sub][phase][phase2['condition'][r]][int(phase2['cs_trial'][r][-2:])]['exp'] = 0
+			
+			if phase == 'extinction':
+				for r in phase3.index:
+					self.phase_exp[sub][phase][phase3['condition'][r]][int(phase3['cs_trial'][r][-2:])] = {}
+					if phase3['resp'][r] == 1:
+						self.phase_exp[sub][phase][phase3['condition'][r]][int(phase3['cs_trial'][r][-2:])]['exp'] = 1
+					
+					elif phase3['resp'][r] == 2 or phase3['resp'][r] == 0:
+						self.phase_exp[sub][phase][phase3['condition'][r]][int(phase3['cs_trial'][r][-2:])]['exp'] = 0
+			
+			if phase == 'extinction_recall':
+				for r in phase4.index:
+					self.phase_exp[sub][phase][phase4['condition'][r]][int(phase4['cs_trial'][r][-2:])] = {}
+					if phase4['resp'][r] == 1:
+						self.phase_exp[sub][phase][phase4['condition'][r]][int(phase4['cs_trial'][r][-2:])]['exp'] = 1
+					
+					elif phase4['resp'][r] == 2 or phase4['resp'][r] == 0:
+						self.phase_exp[sub][phase][phase4['condition'][r]][int(phase4['cs_trial'][r][-2:])]['exp'] = 0
 
-#now we need to come out of the loop, and average across each subject for phase and block
-phase_cr['CR'] = [np.mean(r_phase_cr.loc[0,:]),np.mean(r_phase_cr.loc[1,:]),np.mean(r_phase_cr.loc[2,:]),np.mean(r_phase_cr.loc[3,:]),np.mean(r_phase_cr.loc[4,:]),np.mean(r_phase_cr.loc[5,:]),np.mean(r_phase_cr.loc[6,:]),np.mean(r_phase_cr.loc[7,:])]
-phase_cr['SEM'] = [stats.sem(r_phase_cr.loc[0,:]),stats.sem(r_phase_cr.loc[1,:]),stats.sem(r_phase_cr.loc[2,:]),stats.sem(r_phase_cr.loc[3,:]),stats.sem(r_phase_cr.loc[4,:]),stats.sem(r_phase_cr.loc[5,:]),stats.sem(r_phase_cr.loc[6,:]),stats.sem(r_phase_cr.loc[7,:])]
 
 
-block_cr['CR'] = [np.mean(r_block_cr.loc[0,:]),np.mean(r_block_cr.loc[1,:]),np.mean(r_block_cr.loc[2,:]),np.mean(r_block_cr.loc[3,:]),np.mean(r_block_cr.loc[4,:]),np.mean(r_block_cr.loc[5,:]),np.mean(r_block_cr.loc[6,:]),np.mean(r_block_cr.loc[7,:]),np.mean(r_block_cr.loc[8,:]),np.mean(r_block_cr.loc[9,:]),np.mean(r_block_cr.loc[10,:]),np.mean(r_block_cr.loc[11,:]),np.mean(r_block_cr.loc[12,:]),np.mean(r_block_cr.loc[13,:]),np.mean(r_block_cr.loc[14,:]),np.mean(r_block_cr.loc[15,:]),np.mean(r_block_cr.loc[16,:]),np.mean(r_block_cr.loc[17,:]),np.mean(r_block_cr.loc[18,:]),np.mean(r_block_cr.loc[19,:]),np.mean(r_block_cr.loc[20,:]),np.mean(r_block_cr.loc[21,:]),np.mean(r_block_cr.loc[22,:]),np.mean(r_block_cr.loc[23,:]),np.mean(r_block_cr.loc[24,:]),np.mean(r_block_cr.loc[25,:]),np.mean(r_block_cr.loc[26,:]),np.mean(r_block_cr.loc[27,:]),np.mean(r_block_cr.loc[28,:]),np.mean(r_block_cr.loc[29,:]),np.mean(r_block_cr.loc[30,:]),np.mean(r_block_cr.loc[31,:]),np.mean(r_block_cr.loc[32,:]),np.mean(r_block_cr.loc[33,:]),np.mean(r_block_cr.loc[34,:]),np.mean(r_block_cr.loc[35,:])]
-block_cr['SEM'] = [stats.sem(r_block_cr.loc[0,:]),stats.sem(r_block_cr.loc[1,:]),stats.sem(r_block_cr.loc[2,:]),stats.sem(r_block_cr.loc[3,:]),stats.sem(r_block_cr.loc[4,:]),stats.sem(r_block_cr.loc[5,:]),stats.sem(r_block_cr.loc[6,:]),stats.sem(r_block_cr.loc[7,:]),stats.sem(r_block_cr.loc[8,:]),stats.sem(r_block_cr.loc[9,:]),stats.sem(r_block_cr.loc[10,:]),stats.sem(r_block_cr.loc[11,:]),stats.sem(r_block_cr.loc[12,:]),stats.sem(r_block_cr.loc[13,:]),stats.sem(r_block_cr.loc[14,:]),stats.sem(r_block_cr.loc[15,:]),stats.sem(r_block_cr.loc[16,:]),stats.sem(r_block_cr.loc[17,:]),stats.sem(r_block_cr.loc[18,:]),stats.sem(r_block_cr.loc[19,:]),stats.sem(r_block_cr.loc[20,:]),stats.sem(r_block_cr.loc[21,:]),stats.sem(r_block_cr.loc[22,:]),stats.sem(r_block_cr.loc[23,:]),stats.sem(r_block_cr.loc[24,:]),stats.sem(r_block_cr.loc[25,:]),stats.sem(r_block_cr.loc[26,:]),stats.sem(r_block_cr.loc[27,:]),stats.sem(r_block_cr.loc[28,:]),stats.sem(r_block_cr.loc[29,:]),stats.sem(r_block_cr.loc[30,:]),stats.sem(r_block_cr.loc[31,:]),stats.sem(r_block_cr.loc[32,:]),stats.sem(r_block_cr.loc[33,:]),stats.sem(r_block_cr.loc[34,:]),stats.sem(r_block_cr.loc[35,:])]
+	def exp_stats(self):
 
-#only save the output if its a complete analysis
-if args.subj == 'all':
+		self.exp_df = pd.DataFrame.from_dict({(sub, phase, con, trial): self.phase_exp[sub][phase][con][trial]
+												for sub in self.phase_exp.keys()
+												for phase in self.phase_exp[sub].keys()
+												for con in self.phase_exp[sub][phase].keys()
+												for trial in self.phase_exp[sub][phase][con].keys()},
+												orient='index')
+		
+
+		for sub in self.sub_args:
+			for phase in self.exp_phases:
+				for con in self.cs_condition:
+					_hold = np.zeros(self.exp_df['exp'][sub][phase][con].shape[0])
+					for i in self.exp_df['exp'][sub][phase][con].index:
+						_hold[i-1] = (self.exp_df['exp'][sub][phase][con][:i].sum() / self.exp_df['exp'][sub][phase][con][:i].shape[0])
+					for trial, val in enumerate(_hold):
+						self.phase_exp[sub][phase][con][trial+1]['cavg'] = val
+		
+		self.exp_df = pd.DataFrame.from_dict({(sub, phase, con, trial): self.phase_exp[sub][phase][con][trial]
+												for sub in self.phase_exp.keys()
+												for phase in self.phase_exp[sub].keys()
+												for con in self.phase_exp[sub][phase].keys()
+												for trial in self.phase_exp[sub][phase][con].keys()},
+												orient='index')
+		
 
 
-	phase_cr.to_csv('%s/graphing/ggbp.csv'%(data_dir),sep=',')
-	block_cr.to_csv('%s/graphing/ggbb.csv'%(data_dir),sep=',')
-	#if its not working, then check non-responses
-	phase_cr_long.to_csv('%s/graphing/ggbp_long.csv'%(data_dir),sep=',')
-	block_cr_long.to_csv('%s/graphing/ggbb_long.csv'%(data_dir),sep=',')
+		self.exp_df.reset_index(inplace=True)
+		self.exp_df.rename(columns={'level_0':'subject', 'level_1':'phase', 'level_2':'condition', 'level_3':'trial'}, inplace=True)
+
+		_phases = pd.Categorical(self.exp_df['phase'],
+					categories=self.exp_phases, ordered=True)
+
+		self.exp_df['phase'] = _phases
+		self.exp_df.sort_values(['phase','subject'], inplace=True)
+		self.exp_df.reset_index(inplace=True,drop=True)
+		# self.exp_df.drop('index')
+
+		self.exp_df.to_csv(os.path.join(data_dir,'graphing','behavior','expectancy.csv'))
+
+		self.prop_df = self.exp_df.copy()
+		#self.prop_df = self.prop_df.drop(columns=['subject'])
+		self.prop_df.set_index(['phase','condition','trial'], inplace=True)
+
+		for phase in self.prop_exp:
+			for condition in self.prop_exp[phase]:
+				for trial in self.prop_exp[phase][condition]:
+					self.prop_exp[phase][condition][trial]['avg'] = self.prop_df['exp'][phase][condition][trial].mean()
+					self.prop_exp[phase][condition][trial]['err'] = self.prop_df['exp'][phase][condition][trial].sem()
+
+		self.prop_df = pd.DataFrame.from_dict({(phase, con, trial): self.prop_exp[phase][con][trial]
+										for phase in self.prop_exp.keys()
+										for con in self.prop_exp[phase].keys()
+										for trial in self.prop_exp[phase][con].keys()},
+										orient='index')
+		self.prop_df.reset_index(inplace=True)
+		self.prop_df.rename(columns={'level_0':'phase', 'level_1':'condition', 'level_2':'trial'}, inplace=True)
+
+		_phases = pd.Categorical(self.prop_df['phase'],
+					categories=self.exp_phases, ordered=True)
+
+		self.prop_df['phase'] = _phases
+		self.prop_df.sort_values(['phase','condition','trial'], inplace=True)
+		self.prop_df.set_index(['phase','condition','trial'],inplace=True)
 
 
+	def vis_phase_exp(self):
+
+		# fig, ax = plt.subplots(nrows=1, ncols=3)
+
+		# ax = sns.factorplot(data=self.exp_df, x='trial', y='exp',
+		# 			col='phase', hue='condition', kind='point', ci=95, palette='husl')
+		# plt.savefig('%s/cavg_shoch_exp'%(data_dir + 'graphing' + os.sep + 'behavior'))
+
+		# ax2 = sns.factorplot(data=self.prop_df, x='trial', y='avg',
+		# 		col='phase', hue='condition', kind='point', ci=None, palette='husl')
+		# plt.savefig('%s/prop_shoch_exp'%(data_dir + 'graphing' + os.sep + 'behavior'))
+		sns.set_style(rc={'axes.linewidth':'5'})
+		plt.rcParams['xtick.labelsize'] = 22 
+		plt.rcParams['ytick.labelsize'] = 22
+
+		fig, (ax1, ax2) = plt.subplots(1,2,sharey=False)
+		fig3, ax3 = plt.subplots()
+
+		for cond, color in zip(['CS+','CS-'], [plt.cm.Set1.colors[0], plt.cm.Set1.colors[1]]):
+			ax1.plot(range(1,25), self.prop_df['avg'].loc['fear_conditioning'].loc[cond], marker='o', color=color, markersize=8)
+
+			# ax1.fill_between(range(1,25), self.prop_df['avg'].loc['fear_conditioning'].loc[cond] - self.prop_df['err'].loc['fear_conditioning'].loc[cond],
+			# 							self.prop_df['avg'].loc['fear_conditioning'].loc[cond] + self.prop_df['err'].loc['fear_conditioning'].loc[cond],
+			# 			label='%s'%(cond), color=color, alpha=.5)
+			ax1.set_xticks(np.arange(4,25,4))
+			ax2.plot(range(1,25), self.prop_df['avg'].loc['extinction'].loc[cond], marker='o', color=color, markersize=8)
+			# ax2.fill_between(range(1,25), self.prop_df['avg'].loc['extinction'].loc[cond] - self.prop_df['err'].loc['extinction'].loc[cond],
+			# 							self.prop_df['avg'].loc['extinction'].loc[cond] + self.prop_df['err'].loc['extinction'].loc[cond],
+			# 			label='%s'%(cond), color=color, alpha=.5)
+			ax2.set_xticks(np.arange(4,25,4))
+
+
+			ax3.plot(range(1,13), self.prop_df['avg'].loc['extinction_recall'].loc[cond], marker='o', color=color, markersize=8)
+			# ax3.fill_between(range(1,13), self.prop_df['avg'].loc['extinction_recall'].loc[cond] - self.prop_df['err'].loc['extinction_recall'].loc[cond],
+			# 							self.prop_df['avg'].loc['extinction_recall'].loc[cond] + self.prop_df['err'].loc['extinction_recall'].loc[cond],
+			# 			label='%s'%(cond), color=color, alpha=.5)
+			ax3.set_xticks(np.arange(2,13,2))
+			ax3.set_yticks(np.arange(.2,1.2,.2)) 
+
+		ax1.set_ylim([0,1])
+		ax2.set_ylim([0,1])
+		ax3.set_ylim([0,1])
+		ax1.set_xlim([.5,24.5])
+		ax2.set_xlim([.5,24.5])
+		ax3.set_xlim([.5,12.5])
+
+		# ax1.set_title('Fear Conditioning',size='xx-large')
+		# ax2.set_title('Extinction',size='xx-large')
+		# ax3.set_title('Extinction Recall',size='xx-large')
+
+		# ax1.legend(loc='upper right', fontsize='larger')
+		# ax2.legend(loc='upper right', fontsize='larger')
+		# ax3.legend(loc='upper right', fontsize='larger')
+
+		# ax1.set_ylabel('Proportion of Subjects Expecting a Shock',size = 'x-large')
+
+		# ax1.set_xlabel('Trial',size = 'x-large')
+		# ax2.set_xlabel('Trial',size = 'x-large')
+		# ax3.set_xlabel('Trial',size = 'x-large')
+
+		fig.set_size_inches(10, 4)
+		fig3.set_size_inches(6, 3)
+		plt.tight_layout()
+		fig.savefig(os.path.join(data_dir,'graphing','cns','day1_shock_expectancy_prop.png'), dpi=300)
+		fig3.savefig(os.path.join(data_dir,'graphing','cns','day2_shock_expectancy_prop.png'), dpi=300)

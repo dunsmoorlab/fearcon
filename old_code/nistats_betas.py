@@ -41,6 +41,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import nibabel as nib
+from nilearn.input_data import NiftiMasker
 
 
 #these are variables that are specific to my project, but have descriptive names
@@ -55,29 +56,29 @@ from nistats.first_level_model import FirstLevelModel
 
 from nistats.reporting import plot_design_matrix
 
+from preprocess_library import meta
 
 
 class generate_lss_betas(object):
 
 	#takes in subject, phase (which run), tr, and hemodynamic response function
 	#recommend leaving 'display' off (False), other wise you will see each design matrix which could be a lot 
-	def __init__(self,subj=0,phase=None,tr=0,hrf_model=None,display=False,overwrite=False):
+	def __init__(self,sub=0,phase=None,display=False,overwrite=False):
 
-		self.subj = subj
-		#formatted sub name
-		self.fsub = 'Sub{0:0=3d}'.format(self.subj)
+		self.hrf_model = 'glover + derivative'
 
-		print('initializing %s'%(self.fsub))
+		self.subj = meta(sub)
+		print('initializing %s'%(self.subj.fsub))
 
 		#point to the subject, bold, and run directories
-		self.subj_dir, self.bold_dir, self.run_dir = init_dirs(subj, phase)
+		self.subj_dir, self.bold_dir, self.run_dir = init_dirs(sub, phase)
 
 		#set the display variable (for looking at design matrices & such)
 		self.display = display
 
 
 		#initialize output directories
-		self.beta_out_dir =  os.path.join(self.run_dir, 'ls-s_betas')
+		self.beta_out_dir =  os.path.join(self.run_dir, 'new_ls-s_betas')
 
 		if not os.path.exists(self.beta_out_dir):
 
@@ -95,16 +96,19 @@ class generate_lss_betas(object):
 			#generate the events structure
 			#this is going to be different for every experiment, and will require you to write your own code
 			#the format should be a pandas DataFrame, with the columns: duration, onset, & trial_type
-			self.events = glm_timing(subj,phase).phase_events()
+			if 'localizer' in phase:
+				self.events = glm_timing(sub,phase).loc_blocks()
+			else:
+				self.events = glm_timing(sub,phase).phase_events()
 
 			#something weird was happening with my phase events, this should prevent it from happening again
 			if self.events.isnull().values.any():
-				sys.exit('null value encountered in glm_timing(%s,%s).phase_events()'%(subj,phase))
+				sys.exit('null value encountered in glm_timing(%s,%s).phase_events()'%(sub,phase))
 
 			#do work
 			self.load_bold(phase=phase)
 
-			self.init_glm(tr=tr,hrf_model=hrf_model)
+			self.init_glm()
 
 
 			#real work happens here
@@ -116,25 +120,21 @@ class generate_lss_betas(object):
 
 		#need path to motion corrected functional run
 		self.func = os.path.join(self.bold_dir,nifti_paths[phase])
+		print('bold = %s'%(self.func))
 
+	def init_glm(self):
 
-	def create_mean(self):
+		print('initializing nistats GLM; hrf_model=%s'%(self.hrf_model))
 
-		#create the mean functional image, which is only needed for graphing,
-		#this also should be maybe be moved to a wrapper script if not needed consistently
-		self.mean_func = image.mean_img(self.func)
-
-
-	def init_glm(self,tr=0,hrf_model=None):
-
-		print('initializing nistats GLM; tr=%s, hrf_model=%s'%(tr,hrf_model))
+		masker= NiftiMasker(mask_img=self.subj.brainmask, smoothing_fwhm=None, detrend=True,
+									high_pass=0.0078, t_r=2, standardize=True).fit(imgs=self.func)
 
 		#init the model
 		#this is what needs the most work in terms of reading documentation and tweaking parameters
 		#https://nistats.github.io/modules/reference.html#module-nistats.first_level_model
-		self.glm = FirstLevelModel(t_r=tr, slice_time_ref=0, hrf_model=hrf_model, n_jobs=4)
-
-
+		self.glm = FirstLevelModel(t_r=2, mask=masker, slice_time_ref=.5,
+									hrf_model=self.hrf_model,  signal_scaling=False)
+		
 	def fit_glm(self, beta_model):
 		'''
 		#fit the GLM

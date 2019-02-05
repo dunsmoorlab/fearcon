@@ -8,7 +8,7 @@ from glob import glob
 import argparse
 
 #point to experiment folder
-data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA'
+data_dir = '/Users/ach3377/Db_lpl/STUDY/FearCon'
 
 parser = argparse.ArgumentParser(description='Function arguments')
 
@@ -18,8 +18,8 @@ parser.add_argument('-o', '--overwrite', help='Overwrite output html', default=F
 args=parser.parse_args()
 
 #name output file and bad bold list
-outhtml = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/motion_assess/bold_motion_QA.html'
-out_bad_bold_list = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/motion_assess/bad_subj_no_donut.txt'
+outhtml = '/Users/ach3377/Db_lpl/STUDY/FearCon/motion_assess/bold_motion_QA.html'
+out_bad_bold_list = '/Users/ach3377/Db_lpl/STUDY/FearCon/motion_assess/bad_subj_no_donut.txt'
 
 if args.overwrite == True:
 	#remove previous versions of the output files, since html only appends and doesn't overwrite
@@ -37,7 +37,7 @@ for subj in sub_args:
 	SUBJ = 'Sub{0:0=3d}'.format(subj)
 	
 	#collect all the runs
-	bold_files = glob('%s/%s/bold/day[1-2]/run00[1-7]/run00[1-7].nii.gz'%(data_dir,SUBJ))
+	bold_files = glob('%s/%s/bold/day[1-2]/run00[1-9]/run00[1-9].nii.gz'%(data_dir,SUBJ))
 
 
 

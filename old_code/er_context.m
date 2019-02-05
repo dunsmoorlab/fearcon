@@ -2,7 +2,7 @@
 function [out_res] = er_context(sub,mask,cat,thresh)
 
 
-data_dir = '/Users/ach3377/GoogleDrive/FC_FMRI_DATA/';
+data_dir = '/Users/ach3377/Db_lpl/STUDY/FearCon/';
 
 
 %uncomment this for easy debugging
@@ -19,7 +19,10 @@ subj = init_subj('FearCon',SUBJ);
 
 %point to the mask
 %mask input should be 'VTC' or 'LOC_VTC'
-mask_path = strcat(sub_dir, '/mask/', mask, '_mask.nii.gz');
+if strcmp(mask,'PPA')
+    mask_path = strcat(sub_dir,'/mask/roi/',mask,'_mask.nii.gz');
+else
+    mask_path = strcat(sub_dir, '/mask/', mask, '_mask.nii.gz');
 %load in the mask
 subj = load_spm_mask(subj, mask, mask_path);
 
@@ -27,7 +30,7 @@ subj = load_spm_mask(subj, mask, mask_path);
 %point to the bold dir
 bold_dir = strcat(sub_dir, '/bold');
 %point to the motion-corrected functional runs
-run_files = {strcat(bold_dir,'/day2/run004/mc_run004.nii.gz'),strcat(bold_dir,'/day2/run008/mc_run008.nii.gz'),strcat(bold_dir,'/day2/run009/mc_run009.nii.gz')}; 
+run_files = {strcat(bold_dir,'/day2/run004/pp_run004.nii.gz'),strcat(bold_dir,'/day2/run008/pp_run008.nii.gz'),strcat(bold_dir,'/day2/run009/pp_run009.nii.gz')}; 
 %load in the runs
 subj = load_spm_pattern(subj, 'ERLoc', mask, run_files);
 
