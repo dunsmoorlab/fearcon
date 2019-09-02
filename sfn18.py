@@ -19,7 +19,6 @@ from scipy.signal import exponential
 from beta_rsa import *
 
 imgs='beta'
-nvox = 'all'
 SC=False
 S_DS=False
 rmv_scram=False
@@ -29,8 +28,8 @@ verbose=False
 split=False
 con = 'CS+'
 binarize=True
-save_dict=beta_ppa_prepped
-
+save_dict=ppa_prepped
+nvox = 'all'
 #if save_dict != ppa_prepped and nvox == 'all': sys.exit()
 # conds=['stim','scene','scrambled']
 # conds=['csplus','csminus','scene','scrambled']
@@ -40,10 +39,10 @@ res = group_decode(conds=conds, imgs=imgs, k=nvox, save_dict=save_dict, rmv_rest
 pres = group_decode(conds=conds, imgs=imgs, k=nvox, save_dict=save_dict, rmv_rest=rmv_rest, binarize=binarize, SC=SC, S_DS=S_DS, rmv_scram=rmv_scram, rmv_ind=rmv_ind, p=True, verbose=verbose)
 
 collect_ev(res=res,pres=pres,save_dict=save_dict,split=split)
-for trial in [1,2,3,4]:
-# for trial in [1]:
-	res.beta_exp_stats(trial_=trial,vis=False)
-	pres.beta_exp_stats(trial_=trial,vis=False)
+# for trial in [1,2,3,4]:
+for trial in [1]:
+	res.exp_stats(trial_=trial,vis=False)
+	pres.exp_stats(trial_=trial,vis=False)
 	print(res.ind_df)
 	print(pres.ind_df)
 	df = pd.DataFrame([], columns=['Group','Response','Relative Context Reinstatement'])
@@ -116,7 +115,7 @@ for trial in [1,2,3,4]:
 ev = pd.read_csv(os.path.join(data_dir,'graphing','signal_change','mvpa_ev.csv'))
 ev = ev.rename(columns={'ev':'Context Reinstatement'})
 psc = pd.read_csv(os.path.join(data_dir,'graphing','signal_change','beta_values.csv'))
-
+epsc = pd.read_csv(os.path.join(data_dir,'graphing','signal_change','run003_beta_values.csv'))
 gev = ev.copy()
 
 evmeans = [gev['Context Reinstatement'].loc[gev.Group == 'Control'].mean(),gev['Context Reinstatement'].loc[gev.Group == 'PTSD'].mean()]
@@ -139,16 +138,28 @@ print(tres)
 # ax69 = sns.boxplot(x='Group',y='Context Reinstatement',data=gev)
 
 psc = psc.set_index(['roi'])
+epsc = epsc.set_index(['roi'])
 #####################################################
-vm = psc.loc['vmPFC_beta']
+vm = psc.loc['mOFC_beta']
+evm = epsc.loc['mOFC_beta']
+
 vm.reset_index(inplace=True)
+evm.reset_index(inplace=True)
 
 v = pd.concat([vm,ev],axis=1)
+# v = v.rename(columns={'early_CSp_CSm':'R β Parameter Estimate'})
 v = v.rename(columns={'early_CSp_CSm':'β Parameter Estimate'})
+em = pd.concat([evm,ev],axis=1)
+em = evm.rename(columns={'CSp_CSm':'β Parameter Estimate'})
 
-v = v.set_index(['sub'])
+# b = pd.concat([v,em],axis=1)
+gb = sns.lmplot(x='β Parameter Estimate', y='Context Reinstatement', data=em, col='Group', hue='Group',
+				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
+				height=8, aspect=10/8)
+
+# v = v.set_index(['sub'])
 # v = v.drop(labels=9)
-v = v.reset_index()
+# v = v.reset_index()
 gv = sns.lmplot(x='Context Reinstatement', y='β Parameter Estimate', data=v, col='Group', hue='Group',
 				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
 				height=8, aspect=10/8)
@@ -165,7 +176,7 @@ cvlm = lm(cv['Context Reinstatement'],cv['β Parameter Estimate'])
 pvlm = lm(pv['Context Reinstatement'],pv['β Parameter Estimate'])
 print('control vmpfc = %s'%(cvlm.pvalue))
 print('ptsd vmpfc = %s'%(pvlm.pvalue))
-ttest_ind(cv['β Parameter Estimate'],pv['β Parameter Estimate'])
+print(ttest_ind(cv['β Parameter Estimate'],pv['β Parameter Estimate']))
 plt.figure(figsize=(8,8))
 sw1 = sns.swarmplot(x='Group',y='β Parameter Estimate',hue='Group',data=v, size=10, alpha=.9,
  palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]])
@@ -286,9 +297,23 @@ plt.tight_layout()
 # 	fmt='o',color='#212121',markersize=8,capsize=6)
 
 #####################################################################
+res.exp_ev_df.set_index(['subject','condition','trial','tr'],inplace=True)
+res.exp_ev_df.sort_index(level=['subject','condition','trial','tr'],inplace=True)
+pres.exp_ev_df.set_index(['subject','condition','trial','tr'],inplace=True)
+pres.exp_ev_df.sort_index(level=['subject','condition','trial','tr'],inplace=True)
+idx = pd.IndexSlice
+
 if imgs == 'tr': iNdEx = ['subject','trial','tr']
 else: iNdEx = ['subject','trial']
-cev_corr = res.exp_ev_df.loc[np.where(res.exp_ev_df.condition == 'scene')[0]] 
+# cev_corr = res.exp_ev_df.loc[np.where(res.exp_ev_df.condition == 'scene')[0]] 
+cev_corr = pd.DataFrame([],index=pd.MultiIndex.from_product((sub_args,range(1,5)),names=['subject','trial']),columns=['evidence','response'])
+for sub in sub_args:
+	for trial in range(1,5):
+		cev_corr['evidence'].loc[(sub,trial)] = res.exp_ev_df.loc[idx[sub,'scene',trial,1:3],'evidence'].mean()
+		cev_corr['response'].loc[(sub,trial)] = res.exp_ev_df.loc[idx[sub,'scene',trial,0],'response']	
+cev_corr.reset_index(inplace=True)
+cev_corr.set_index(['subject'])
+
 for i in cev_corr.index:
 	if cev_corr['response'].loc[i] == 'expect':
 		cev_corr['response'].loc[i] = 1
@@ -297,7 +322,15 @@ for i in cev_corr.index:
 cev_corr = cev_corr.set_index(iNdEx)
 
 
-pev_corr = pres.exp_ev_df.loc[np.where(pres.exp_ev_df.condition == 'scene')[0]] 
+# pev_corr = pres.exp_ev_df.loc[np.where(pres.exp_ev_df.condition == 'scene')[0]] 
+pev_corr = pd.DataFrame([],index=pd.MultiIndex.from_product((p_sub_args,range(1,5)),names=['subject','trial']),columns=['evidence','response'])
+for sub in p_sub_args:
+	for trial in range(1,5):
+		pev_corr['evidence'].loc[(sub,trial)] = pres.exp_ev_df.loc[idx[sub,'scene',trial,1:3],'evidence'].mean()
+		pev_corr['response'].loc[(sub,trial)] = pres.exp_ev_df.loc[idx[sub,'scene',trial,0],'response']	
+pev_corr.reset_index(inplace=True)
+pev_corr.set_index(['subject'])
+
 for i in pev_corr.index:
 	if pev_corr['response'].loc[i] == 'expect':
 		pev_corr['response'].loc[i] = 1
@@ -310,6 +343,7 @@ N = 4
 end_value = .25
 decay = exponential(N,0,-(N-1)/np.log(end_value),False)
 # decay = [1,.75,.5,.25]
+# decay = [1,1,1,1]
 
 exp_corr = pd.DataFrame([],index=all_sub_args,columns=['response','evidence','Group'])
 for sub in sub_args:
@@ -358,24 +392,74 @@ demo = pd.read_csv(os.path.join(data_dir,'Demographics_Survey','summary_stats.cs
 demo['sub'] = 0
 for i in demo.index: demo['sub'][i] = int(demo.Subject[i][-3:])
 demo.set_index(['sub'],inplace=True)
-# Sub110 does not have survey data
-demo = demo.drop(110,'index')
-
-p_args = [sub for sub in p_sub_args if sub is not 110]
+# Sub110 does not have IUS survey data
+# demo = demo.drop(110,'index')
+#p_args = [sub for sub in p_sub_args if sub is not 110]
 #ttest_ind(demo.IUS[sub_args], demo.IUS[p_args])
 
 ev = pd.read_csv(os.path.join(data_dir,'graphing','signal_change','mvpa_ev.csv'))
 ev.set_index(['subject'],inplace=True)
-ev.drop(110,'index',inplace=True)
+# ev.drop(110,'index',inplace=True)
+
+ev = pd.concat([ev,demo],axis=1)
+
+gs = sns.lmplot(x='ev',y='BAI',data=ev, col='Group', hue='Group',
+				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
+				height=8, aspect=10/8)
 
 
+###############################################################################################
+ev = pd.read_csv(os.path.join(data_dir,'graphing','signal_change','mvpa_ev.csv'))
+ev.set_index(['subject'],inplace=True)
+scr = pd.read_csv(os.path.join(data_dir,'Group_SCR','extinction_recall','avg_4.csv'))
+scr.set_index(['subject'],inplace=True)
 
+scr['ev'] = ev.ev
+gs = sns.lmplot(x='ev',y='scr',data=scr, col='group', hue='group',
+				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
+				height=8, aspect=10/8)
 
+gs = sns.lmplot(x='vm',y='scr',data=scr, col='group', hue='group',
+				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
+				height=8, aspect=10/8)
+###############################################################################################
+for roi in ['mOFC','vmPFC','amygdala','hippocampus','dACC']:
+	dat = psc.loc[]
 
+vm.reset_index(inplace=True)
 
+v = pd.concat([vm,ev],axis=1)
+# v = v.rename(columns={'early_CSp_CSm':'β Parameter Estimate'})
+v = v.rename(columns={'CSp_CSm':'β Parameter Estimate'})
 
+v = v.set_index(['sub'])
+# v = v.drop(labels=9)
+v = v.reset_index()
+gv = sns.lmplot(x='Context Reinstatement', y='β Parameter Estimate', data=v, col='Group', hue='Group',
+				palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]],
+				height=8, aspect=10/8)
+cv = v.loc[np.where(v.Group == 'Control')[0]]
+# cv = cv.drop(labels=8)
+pv = v.loc[np.where(v.Group == 'PTSD')[0]]
 
+# cc = sns.lmplot(x='Context Reinstatement',y='β Parameter Estimate', data=cv, hue='Group',palette=[wes_palettes['Chevalier'][0]],height=8,aspect=10/8)
+# plt.title('Context reinstatement correlates with vmPFC activity')
+# pc = sns.lmplot(x='Context Reinstatement',y='β Parameter Estimate', data=pv, hue='Group',palette=[wes_palettes['Royal1'][1]],height=8,aspect=10/8)
+# plt.title('vmPFC')
 
+cvlm = lm(cv['Context Reinstatement'],cv['β Parameter Estimate'])
+pvlm = lm(pv['Context Reinstatement'],pv['β Parameter Estimate'])
+print('control vmpfc = %s'%(cvlm.pvalue))
+print('ptsd vmpfc = %s'%(pvlm.pvalue))
+print(ttest_ind(cv['β Parameter Estimate'],pv['β Parameter Estimate']))
+plt.figure(figsize=(8,8))
+sw1 = sns.swarmplot(x='Group',y='β Parameter Estimate',hue='Group',data=v, size=10, alpha=.9,
+ palette=[wes_palettes['Chevalier'][0],wes_palettes['Royal1'][1]])
+sns.pointplot(x='Group',y='β Parameter Estimate',data=v, palette=['black','black'],capsize=.1)
+sw1.set_ylim(-60,60)
+plt.title('vmPFC')
+sw1.legend_.remove()
+plt.tight_layout()
 
 
 

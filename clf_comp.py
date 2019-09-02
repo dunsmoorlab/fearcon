@@ -26,7 +26,7 @@ for _img in imgs:
 
 eval_xval(name='binary', imgs='beta', del_rest=False,
 	scene_collapse=False, scene_DS=False, rmv_scram=False, rmv_indoor=False, binarize=True,
-	p='all', save_dict=beta_ppa_prepped, k=['all'], cf=True)
+	p='all', save_dict=hipp_no_ppa_beta, k=[300], cf=True)
 
 for imgs in ['tr','beta']:
 	eval_xval(name='all cats', imgs=imgs, del_rest=False,
@@ -35,7 +35,6 @@ for imgs in ['tr','beta']:
 
 
 
-eval_xval(name='Collapse Scenes & No Scrambled', imgs='tr', del_rest=False,
-		scene_collapse=True, scene_DS=True, rmv_scram=True, rmv_indoor=False, binarize=False,
+res = eval_xval(name='final', imgs='beta', del_rest=False,
+		scene_collapse=False, scene_DS=False, rmv_scram=False, rmv_indoor=False, binarize=True,
 		p='all', save_dict=ppa_prepped, k=['all'], cf=True)
-

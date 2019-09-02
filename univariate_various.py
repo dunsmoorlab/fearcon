@@ -75,11 +75,14 @@ def move2tacc():
 
     # dest = os.path.join('/Volumes/DunsmoorRed','fc')
     dest = os.path.join('/Users/ach3377/Desktop','fc')
+    # dest = os.path.join('/Volumes/DunsmoorLab','FearCon_nifti')
     # dest = os.path.join('C:\\Users','ACH','Desktop','fc')
+    # dest = os.path.join('/mnt/c/Users/ACH/Desktop/fc')
     if not os.path.exists(dest): os.mkdir(dest)
 
     # for sub in [23,24,25,26,122,123,124,125]:
     for sub in all_sub_args:
+    # for sub in [21]:
         subj = meta(sub)
         sub_dir = os.path.join(dest,subj.fsub)
         os.mkdir(sub_dir)
@@ -87,6 +90,10 @@ def move2tacc():
         # orig = os.path.join(bold_dir,'orig')
         betas = os.path.join(bold_dir,'beta')
         os.makedirs(betas)
+
+        # mask_dir = os.path.join(sub_dir,'mask')
+        # os.makedirs(mask_dir)
+        # os.system('cp -R %s %s'%(subj.roi,mask_dir))
 
         # scr_src = os.path.join(subj.subj_dir,'SCR')
         # behavior_src = os.path.join(subj.subj_dir,'behavior')
@@ -97,7 +104,10 @@ def move2tacc():
         # os.copytree(scr_src,sub_dir)
         # os.copytree(behavior,sub_dir)
 
-        # behavior_dest = os.path.join(sub_)
+        # behavior_dest = os.path.join(sub_dir,'behavior')
+        # os.mkdir(behavior_dest)
+
+        # os.system('cp -R %s %s'%(behavior_src,sub_dir))
         
         # os.makedirs(orig)
         # std = os.path.join(bold_dir, 'std')
@@ -108,32 +118,39 @@ def move2tacc():
         # os.mkdir(os.path.join(fc,'%s'%(subj.fsub)))
 
         for phase in fsl_betas:
-            if phase == 'localizer_2' and sub == 117: pass
-            else:
+            # if phase == 'localizer_2' and sub == 107: pass
+            # elif 'localizer' in phase:
+            if 'memory' in phase:
                 run = os.path.join(subj.bold_dir, fsl_betas[phase])
                 cpy = os.path.join(betas, os.path.split(fsl_betas[phase])[-1])
                 copyfile(run,cpy)
 
-        # for phase in nifti_paths:
-            # if phase == 'localizer_2' and sub == 117: pass
-            # if 'extinction_recall' in phase:
-            # run = os.path.join(subj.bold_dir, nifti_paths[phase])
-            # cpy = os.path.join(orig, os.path.split(nifti_paths[phase])[-1])
-            # copyfile(run,cpy)
-        
+        # save_dict = raw_paths
+        # for phase in save_dict:
+        #     if phase == 'localizer_2' and sub == 117: pass
+        #     else:
+        #         run = os.path.join(subj.bold_dir, save_dict[phase])
+        #         cpy = os.path.join(orig, os.path.split(save_dict[phase])[-1])
+        #         copyfile(run,cpy)
+            
         # orig_whole = os.path.join(subj.anatomy,'orig.nii.gz')
+        # struct = os.path.join(subj.anatomy,'struct.nii.gz')
+        # copyfile(struct,os.path.join(anat,'struct.nii.gz'))
         # brainmask = os.path.join(subj.anatomy,'brainmask.nii.gz')
         # orig_brain_new = os.path.join(anat,'orig_brain.nii.gz')
         # os.system('fslmaths %s -mas %s %s'%(orig_whole, brainmask, orig_brain_new))
     
         # model_dir = os.path.join(sub_dir,'model') 
         # os.mkdir(model_dir)
-        # pm_dest = os.path.join(model_dir,'onsets','run004')
-        # os.makedirs(pm_dest)
-        # onsets = os.path.join(subj.model_dir,'GLM','onsets')
-        # for file in os.listdir(os.path.join(onsets,'run004')):
-            # if 'beta' in file:
-                # os.system('cp %s %s'%(os.path.join(onsets,'run004',file), os.path.join(pm_dest,file)))
+        # for run in [1]:
+        #     m_dest = os.path.join(model_dir,'onsets','run00%s'%(run))
+        #     os.makedirs(m_dest)
+        #     onsets = os.path.join(subj.model_dir,'GLM','onsets')
+        #     for file in os.listdir(os.path.join(onsets,'run00%s'%(run))):
+        #         # if 'beta' in file:
+        #         if 'resp' not in file and 'txt' in file:
+        #             copyfile(os.path.join(onsets,'run00%s'%(run),file), os.path.join(m_dest,file))
+                    # os.system('cp %s %s'%(os.path.join(onsets,'run00%s'%(run),file), os.path.join(m_dest,file)))
         # copytree(onsets, os.path.join(model_dir,os.path.split(onsets)[-1]))
 
         # for run in ['localizer_1','localizer_2','extinction_recall']:
@@ -173,6 +190,8 @@ def move2tacc():
     #scp -r ach3377@ls5.tacc.utexas.edu:"/work/05426/ach3377/lonestar/fc/group_glm/localizer/sub_masks/" "/mnt/c/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/loc_roi/"
     #scp -r ach3377@ls5.tacc.utexas.edu:"/work/05426/ach3377/lonestar/fc/Sub003/model/run008/locblock.feat" "/Users/ach3377/Desktop/"
 
+    #scp -r ach3377@ls5.tacc.utexas.edu:"/work/05426/ach3377/lonestar/group_glm/searchlight/stats/" "/Users/ach3377/Desktop/"
+
 def fs_roi_mask(sub):
     subj = meta(sub)
 
@@ -181,44 +200,51 @@ def fs_roi_mask(sub):
     if not os.path.exists(outdir): os.mkdir(outdir)
     aparc_aseg = os.path.join(srcdir,'aparc+aseg.nii.gz')
 
-    lh_mOFC  = [os.path.join(outdir,'lh_mOFC.nii.gz'),1014]
-    rh_mOFC  = [os.path.join(outdir,'rh_mOFC.nii.gz'),2014]
+    # lh_mOFC  = [os.path.join(outdir,'lh_mOFC.nii.gz'),1014]
+    # rh_mOFC  = [os.path.join(outdir,'rh_mOFC.nii.gz'),2014]
 
-    lh_lOFC  = [os.path.join(outdir,'lh_lOFC.nii.gz'),1012]
-    rh_lOFC  = [os.path.join(outdir,'rh_lOFC.nii.gz'),2012]
+    # lh_lOFC  = [os.path.join(outdir,'lh_lOFC.nii.gz'),1012]
+    # rh_lOFC  = [os.path.join(outdir,'rh_lOFC.nii.gz'),2012]
     
-    lh_amyg = [os.path.join(outdir,'lh_amyg.nii.gz'),18]
-    rh_amyg = [os.path.join(outdir,'rh_amyg.nii.gz'),54]
+    # lh_amyg = [os.path.join(outdir,'lh_amyg.nii.gz'),18]
+    # rh_amyg = [os.path.join(outdir,'rh_amyg.nii.gz'),54]
     
-    lh_hpc = [os.path.join(outdir,'lh_hpc.nii.gz'),17]
-    rh_hpc = [os.path.join(outdir,'rh_hpc.nii.gz'),53]
+    # lh_hpc = [os.path.join(outdir,'lh_hpc.nii.gz'),17]
+    # rh_hpc = [os.path.join(outdir,'rh_hpc.nii.gz'),53]
 
-    lh_dACC = [os.path.join(outdir,'lh_dACC.nii.gz'),1002]
-    rh_dACC = [os.path.join(outdir,'rh_dACC.nii.gz'),2002]
+    # lh_dACC = [os.path.join(outdir,'lh_dACC.nii.gz'),1002]
+    # rh_dACC = [os.path.join(outdir,'rh_dACC.nii.gz'),2002]
 
-    for roi in [lh_mOFC,rh_mOFC,lh_lOFC,rh_lOFC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
-    for roi in [lh_mOFC,rh_mOFC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
-    for roi in [lh_amyg,rh_amyg]:   os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
-    for roi in [lh_hpc,rh_hpc]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
-    for roi in [lh_dACC,rh_dACC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    lh_ins  = [os.path.join(outdir,'lh_insula.nii.gz'),1035]
+    rh_ins  = [os.path.join(outdir,'rh_insula.nii.gz'),2035]
 
-    vmPFC_out = os.path.join(outdir, 'vmPFC_mask.nii.gz')
-    mOFC_out = os.path.join(outdir, 'mOFC_mask.nii.gz')
-    amyg_out = os.path.join(outdir,'amygdala_mask.nii.gz')
-    hpc_out = os.path.join(outdir,'hippocampus_mask.nii.gz')
-    dACC_out = os.path.join(outdir,'dACC_mask.nii.gz')
+    # for roi in [lh_mOFC,rh_mOFC,lh_lOFC,rh_lOFC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    # for roi in [lh_mOFC,rh_mOFC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    # for roi in [lh_amyg,rh_amyg]:   os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    # for roi in [lh_hpc,rh_hpc]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    # for roi in [lh_dACC,rh_dACC]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
+    for roi in [lh_ins,rh_ins]:os.system('fslmaths %s -thr %s -uthr %s %s'%(aparc_aseg, roi[1], roi[1], roi[0]))
 
-    os.system('fslmaths %s -add %s -add %s -add %s  -bin %s'%(lh_mOFC[0], rh_mOFC[0], lh_lOFC[0], rh_lOFC[0], vmPFC_out))
-    os.system('fslmaths %s -add %s -bin %s'%(lh_mOFC[0], rh_mOFC[0], mOFC_out))
-    os.system('fslmaths %s -add %s -bin %s'%(lh_amyg[0], rh_amyg[0], amyg_out))
-    os.system('fslmaths %s -add %s -bin %s'%(lh_hpc[0], rh_hpc[0], hpc_out))
-    os.system('fslmaths %s -add %s -bin %s'%(lh_dACC[0], rh_dACC[0], dACC_out))
+    # vmPFC_out = os.path.join(outdir, 'vmPFC_mask.nii.gz')
+    # mOFC_out = os.path.join(outdir, 'mOFC_mask.nii.gz')
+    # amyg_out = os.path.join(outdir,'amygdala_mask.nii.gz')
+    # hpc_out = os.path.join(outdir,'hippocampus_mask.nii.gz')
+    # dACC_out = os.path.join(outdir,'dACC_mask.nii.gz')
+    ins_out = os.path.join(outdir,'insula_mask.nii.gz')
+
+    # os.system('fslmaths %s -add %s -add %s -add %s  -bin %s'%(lh_mOFC[0], rh_mOFC[0], lh_lOFC[0], rh_lOFC[0], vmPFC_out))
+    # os.system('fslmaths %s -add %s -bin %s'%(lh_mOFC[0], rh_mOFC[0], mOFC_out))
+    # os.system('fslmaths %s -add %s -bin %s'%(lh_amyg[0], rh_amyg[0], amyg_out))
+    # os.system('fslmaths %s -add %s -bin %s'%(lh_hpc[0], rh_hpc[0], hpc_out))
+    # os.system('fslmaths %s -add %s -bin %s'%(lh_dACC[0], rh_dACC[0], dACC_out))
+    os.system('fslmaths %s -add %s -bin %s'%(lh_ins[0], rh_ins[0], ins_out))
     
     struct = os.path.join(srcdir, 'struct.nii.gz')
     o2h = os.path.join(srcdir, 'orig-struct0GenericAffine.mat')
     interp = 'NearestNeighbor'
     
-    for mask in [vmPFC_out,mOFC_out,amyg_out,hpc_out,dACC_out]:
+    # for mask in [vmPFC_out,mOFC_out,amyg_out,hpc_out,dACC_out]:
+    for mask in [ins_out]:
         #register the mask to freesurfer_structural space, which is what was used to register to functional space
         #this puts the mask in the same space as orig_brain.nii.gz
         os.system('antsApplyTransforms -i {} -o {} -r {} -t {} -n {}'.format(mask, mask, struct, o2h, interp))
@@ -234,7 +260,7 @@ def fs_roi_mask(sub):
 def pe_beta_masker(sub,phase='extinction_recall',roi='PPA',save_dict=None):
     subj = meta(sub)
 
-    masker = NiftiMasker(mask_img=os.path.join(subj.roi,'%s_mask.nii.gz'%(roi)), standardize=True)
+    masker = NiftiMasker(mask_img=os.path.join(subj.roi,'%s_mask.nii.gz'%(roi)), standardize=False)
     # masker = NiftiMasker(mask_img=subj.ctx_maskvol, standardize=True)
 
     print('masking runs')
@@ -297,7 +323,42 @@ def combine_masks():
 
 
 
+def func_brain_mask():
 
+    for sub in all_sub_args:
+        subj = meta(sub)
+
+        outmask = os.path.join(subj.roi,'func_brain_mask.nii.gz')
+
+        cmd = 'fslmaths %s -bin %s'%(subj.refvol_be,outmask)
+
+        os.system(cmd)
+
+def collect_trial_betas(phase='extinction_recall'):
+
+    trials = range(1,25)
+    rois = ['mOFC','vmPFC','hippocampus','amygdala','dACC','PPA','insula']
+    bdf = pd.DataFrame(columns=['beta'],index=pd.MultiIndex.from_product([
+                        all_sub_args,trials,rois],
+                        names=['subject','trial','roi']))
+
+
+    for sub in all_sub_args:
+        subj = meta(sub); print(sub)
+
+        for roi in rois:
+            print(roi)
+            masker = NiftiMasker(mask_img=os.path.join(subj.roi,'%s_mask.nii.gz'%(roi)), standardize=False)
+
+            beta_img = masker.fit_transform(os.path.join(subj.bold_dir, phase2rundir[phase],
+                                'fsl_betas','%s_beta.nii.gz'%(py_run_key[phase]) ))
+    
+            for i, trial in enumerate(trials):
+
+                bdf.loc[(sub,trial,roi),'beta'] = beta_img[i,:].mean()
+
+    bdf.reset_index(inplace=True)
+    bdf.to_csv(os.path.join(data_dir,'graphing','signal_change','%s_trial_betas.csv'%(phase)),index=False)
 
 
 

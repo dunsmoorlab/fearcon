@@ -17,6 +17,7 @@ class View(object):
 
 	def __init__(self,subj=None,xfm_name='rai2rfi'):
 
+		#to use fsaverage just type 'fs'
 		self.subj = meta(subj)
 
 		#find the correct transform in the pycortex subject folder
@@ -26,6 +27,8 @@ class View(object):
 		self.pycx_id = self.subj.fsub
 
 		proj_dir = data_dir
+		self.opdir = os.path.join('graphing','op_decode','importance_maps') + os.sep
+
 
 		if self.pycx_id not in cortex.db.subjects.keys():
 			print('Subject {:s} does NOT have a structure in pycortex.'.format(self.subj.fsub))
@@ -57,14 +60,21 @@ class View(object):
 		data = self._get_nii_data(nii_name=nii)
 		print(data)
 		# create pycortex volume structure
-		self.vol = cortex.Volume(data,self.pycx_id,self.xfm_name,**kwargs)
-		# data = np.array(nib.load(img_dir).get_data().swapaxes(0,2),'float32')
-		# vol = cortex.Volume(data, self.subject, self.xfm_name)
-		# mos, _ = cortex.mosaic(vol.volume[0], show=False)
-
-
+		#####use vmin/vmax kwrags######
+		self.vol = cortex.Volume(data,self.pycx_id,self.xfm_name,
+									# 			with_curvature=True,
+									# curvature_contrast=0.65,
+         #                            curvature_brightness=0.16,
+         #                            curvature_threshold=True,
+                                    **kwargs)
+		
 		# open in browser
-		self.view = cortex.webshow(self.vol,autoclose=False,**kwargs)
+		self.view = cortex.webshow(self.vol,autoclose=False,
+									# with_curvature=True,
+									# curvature_contrast=0.65,
+         #                            curvature_brightness=0.16,
+         #                            curvature_threshold=True,
+                                    **kwargs)
 		# view = cortex.webs`how(vol, port=port, autoclose=False, 
 		#                     template=html_template, title='instabrain')
 		self.view.animate([{'state':'surface.%s.specularity'%(self.subj.fsub),'idx':0,'value':0}])
@@ -128,6 +138,13 @@ class View(object):
 					{'state':'camera.altitude','idx':0,'value':90},
 					{'state':'camera.radius','idx':2,'value':200},
 					{'state':'surface.%s.pivot'%(self.subj.fsub),'idx':2,'value':180}])
+
+		elif clip == 'spin':
+			self.view.animate([{'state':'camera.azimuth','idx':3,'value':180},
+								#{'state':'camera.azimuth','idx':1.5,'value':360}
+								])
+			time.sleep(.01)
+			self.view.animate([{'state':'camera.azimuth','idx':3,'value':360}])
 
 	def create_pycx_subj(self):
 		

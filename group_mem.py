@@ -35,9 +35,9 @@ group_mem = pd.concat([res.phase_cr,pres.phase_cr])
 
 group_mem.to_csv(os.path.join(data_dir,'graphing','memory','group_memory.csv'))
 
-sw = sns.factorplot(data=group_mem, x='condition', y='cr',
-					col='phase',hue='group',
-					kind='point', palette='hls')
+# sw = sns.factorplot(data=group_mem, x='condition', y='cr',
+# 					col='phase',hue='group',
+# 					kind='point', palette='hls')
 
 
 c_csp = res.phase_err.loc[np.where(res.phase_err['condition'] == 'CS+')[0]]
@@ -101,6 +101,17 @@ for phase in memory_phase:
 # fig.savefig(os.path.join(data_dir,'graphing','memory','group_cr.png'), dpi=300)
 
 
+# ####ROC AUC####
+# res = recognition_memory().aucdf
+# pres = recognition_memory(p=True).aucdf
 
+# res['group'] = 'control'
+# pres['group'] = 'ptsd'
+
+# auc = pd.concat([res,pres])
+# auc['gcond'] = auc.group + '_' + auc.condition
+# sns.swarmplot(x='phase',y='auc',hue='gcond',data=auc,dodge=True,
+# 		palette=['darkorange','grey','orange','lightgrey'])
+# for sub in all_sub_args:
 
 

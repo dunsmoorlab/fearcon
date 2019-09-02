@@ -157,6 +157,7 @@ class decode():
 class group_decode():
 
 	def __init__(self, conds=None, imgs=None, k=0, save_dict=mvpa_masked_prepped, binarize=False, rmv_rest=False,SC=True, S_DS=True, rmv_ind=False, rmv_scram=True, p=False, verbose=False):
+		self.save_dict = save_dict
 
 		self.verbose = verbose
 		if binarize:
@@ -200,7 +201,7 @@ class group_decode():
 		print(self.sub_args)
 		if self.verbose: print('hi hello')
 		self.sub_decode(imgs=imgs, k=k, save_dict=save_dict, binarize=binarize,rmv_rest=rmv_rest, rmv_ind=rmv_ind, SC=SC, S_DS=S_DS, rmv_scram=rmv_scram, verbose=verbose)
-		if save_dict == beta_ppa_prepped: 
+		if save_dict == beta_ppa_prepped or save_dict == hippocampus_beta or save_dict == hipp_no_ppa_beta or save_dict == beta_nz_ppa_prepped: 
 			self.event_res = self.beta_event_results(self.group_results)
 			print('did the beta thing')
 		else:
@@ -666,8 +667,10 @@ class group_decode():
 		self._expect_ = {}
 
 		for trial in [1,2,3,4]:
-			# self.exp_stats(trial_=trial,vis=False)
-			self.beta_exp_stats(trial_=trial)
+			if self.save_dict == ppa_prepped:
+				self.exp_stats(trial_=trial,vis=False)
+			else:
+				self.beta_exp_stats(trial_=trial)
 
 			self.base_stats = self.ev_base_err.copy()
 
@@ -682,7 +685,7 @@ class group_decode():
 
 				
 				#the point here is to average over the 2 trs of the stimulus
-				# self.co_base[resp][trial] = np.mean(np.array((self.base_stats.loc[resp].loc['0'],self.base_stats.loc[resp].loc['1'])),axis=0)
+				# self.co_base[resp][trial] = np.mean(np.array((self.base_stats.loc[resp].loc['0'],self.base_stats.loc[resp].loc['1'],self.base_stats.loc[resp].loc['2'],self.base_stats.loc[resp].loc['3'],)),axis=0)
 				self.co_base[resp][trial] = self.base_stats.loc[resp].loc['0']
 				#get rid of NaNs
 				self.co_base[resp][trial] = self.co_base[resp][trial][~np.isnan(self.co_base[resp][trial])]

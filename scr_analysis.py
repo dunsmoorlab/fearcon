@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 from math import sqrt
 import seaborn as sns
 
-from fc_config import data_dir, sub_args, pretty_graph
+from fc_config import *
 from glm_timing import glm_timing
 from preprocess_library import meta
+from wesanderson import wes_palettes
 
 class scr_sort():
 
@@ -81,7 +82,7 @@ class scr_stats():
 
 	n_trials = {'extinction_recall': 24}
 
-	def __init__(self, phase):
+	def __init__(self, phase='extinction_recall'):
 		
 		self.trial_range = range(scr_stats.n_trials[phase])
 		self.true_range = list(range(1, self.trial_range[-1] + 2))
@@ -89,16 +90,79 @@ class scr_stats():
 
 		self.collect_sub_scr()
 		# self.stats_dict()
-		# self.determine_non_responders()
+		# self.determine_non_responders()a
 
 	def collect_sub_scr(self):
 
 		self.sub_dfs = {}
 
-		for sub in sub_args:
-			subj = meta(sub)
-			self.sub_dfs[sub] = pd.read_csv('%s/SCR/%s_analyzed.csv'%(subj.subj_dir, self.phase))
+		# for sub in sub_args:
+		# 	subj = meta(sub)
+		# 	self.sub_dfs[sub] = pd.read_csv('%s/SCR/%s_analyzed.csv'%(subj.subj_dir, self.phase))
+		
+		self.raw = pd.read_csv(os.path.join(data_dir,'Group_SCR','extinction_recall','manual_extinction_recall_scr.csv'))
+		self.raw.set_index(['subject'],inplace=True)
+		# self.raw = np.sqrt(self.raw)
 
+		self.scr = pd.DataFrame([],index=pd.MultiIndex.from_product(
+			[all_sub_args,['CS+','CS-'],range(1,13)],
+			names=['subject','condition','trial']),
+			columns=['raw','group','half','quarter'])
+
+		for sub in all_sub_args:
+			
+			for cond in ['CS+','CS-']:
+
+				subj = meta(sub)
+				events = glm_timing(sub,'extinction_recall').phase_events(con=True)
+
+				cs_map = np.where(events == cond)[0] + 1
+
+				# cs_cols = [col for col in self.scr.columns if cond in col]
+				for i,val in enumerate(cs_map):
+					self.scr.loc[(sub,cond,int(i+1)),'raw'] = self.raw.loc[sub,str(cs_map[i])]
+					# scr.loc[(sub,cond,int(i+1)),'raw'] = raw.loc[sub,str(cs_map[i])]
+		self.scr.raw = self.scr.raw.astype(float)
+		# square root transform
+		self.scr['scr'] = self.scr.raw.apply(np.sqrt)
+
+		self.scr.loc[sub_args,'group'] = 'control'
+		self.scr.loc[p_sub_args,'group'] = 'ptsd'
+		
+		self.scr['phase'] = 'renewal'
+		
+		self.out = pd.DataFrame([],index=all_sub_args,columns=['scr','group'])
+		self.out.index.name = 'subject'
+		for sub in all_sub_args:
+
+			self.out.scr.loc[sub] = self.scr.scr.loc[(sub,'CS+',[1,2,3,4])].mean()
+
+		self.out.group[sub_args] = 'control'
+		self.out.group[p_sub_args] = 'ptsd'
+
+		self.out.to_csv(os.path.join(data_dir,'graphing','SCR','rnw_4CSP.csv'))
+
+		self.scr.reset_index(inplace=True)
+		self.scr['scr'] = self.scr['scr'].astype(float)
+
+		self.scr = self.scr.set_index('trial')
+		self.scr.loc[(1,2,3,4),'half'] = 1
+		self.scr.loc[(1,2,3,4),'quarter'] = 5
+
+		self.scr.loc[(5,6,7,8,9,10,11,12),'half'] = 2
+		self.scr.loc[(5,6,7,8,9,10,11,12),'quarter'] = 6
+		
+		self.scr.reset_index(inplace=True)
+		self.scr.to_csv(os.path.join(data_dir,'graphing','SCR','day2_all_scr.csv'),index=False)		
+	def graph(self):
+		sns.set_context('poster')
+		sns.set_style('whitegrid',{'axes.facecolor':'.9','figure.facecolor':'.9'})	
+		c = sns.catplot(x='trial',y='scr',hue='condition',col='group',data=self.scr,kind='box',
+			palette=[wes_palettes['Darjeeling1'][3],wes_palettes['Darjeeling1'][-1]])
+		# plt.tight_layout()
+		c1 = sns.catplot(x='trial',y='scr',hue='condition',col='group',data=self.scr,kind='point',
+			palette=[wes_palettes['Darjeeling1'][3],wes_palettes['Darjeeling1'][-1]])
+	
 	def stats_dict(self):
 
 		trial_res = {}

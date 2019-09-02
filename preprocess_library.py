@@ -852,8 +852,11 @@ class meta(object):
 				os.mkdir(self.reg_dir)
 
 			self.model_dir = os.path.join(self.subj_dir, 'model')
+			self.rsa = os.path.join(self.model_dir,'rsa')
+			if not os.path.exists(self.rsa): os.mkdir(self.rsa)
 
-
+			self.sl_dir = os.path.join(self.model_dir,'searchlight')
+			if not os.path.exists(self.sl_dir): os.mkdir(self.sl_dir)
 	#see what the csplus and csminus are for this sub
 	def cs_lookup(self):	
 		if self.meta['DataFile.Basename'][0][0] == 'A':

@@ -8,6 +8,7 @@ from scipy import stats
 from scipy.stats import ttest_rel, ttest_ind
 from fc_config import *
 from preprocess_library import meta
+from sklearn.metrics import auc
 
 class recognition_memory():
 
@@ -18,14 +19,18 @@ class recognition_memory():
 			# self.sub_args = self.exclude_subs(old=sub_args, exclude=[])
 			self.sub_args = self.exclude_subs(old=sub_args, exclude=[18,20])
 		elif p:
-			# self.sub_args = self.exclude_subs(old=working_subs, exclude=[120])
-			self.sub_args = self.exclude_subs(old=p_sub_args, exclude=[])
+			self.sub_args = self.exclude_subs(old=working_subs, exclude=[120])
+			# self.sub_args = self.exclude_subs(old=p_sub_args, exclude=[])
 
 
 		self.create_output_structures()
 
 		for sub in self.sub_args:
+			# self.collect_roc(sub)
 			self.collect_mem_dat(sub, hch=hch)
+
+		self.aucdf.reset_index(inplace=True)
+		self.aucdf.auc = self.aucdf.auc.astype(float)
 
 		self.mem_stats()
 		#self.vis_group_mem()
@@ -66,9 +71,106 @@ class recognition_memory():
 								[self.sub_args, ['false_alarm'], cs_condition],
 								names=['subject','phase','condition']),
 								columns=['cr'])
+		
+		self.aucdf = pd.DataFrame([],columns=['auc'],
+					index=pd.MultiIndex.from_product(
+					[self.sub_args,self.block_phases,cs_condition],
+					names=['subject','phase','condition']))
+
 
 		self.block_cr.hit_count = 0
 		self.block_cr.sort_index(inplace=True)
+
+	def recog_auc(self,old,new):
+		curve=np.zeros([4,2])    
+		for i, thr in enumerate([4,3,2,1]):
+			throld = [resp for resp in old if resp >= thr]
+			thrnew = [resp for resp in new if resp >= thr]
+			curve[i,1] = len(throld) / len(old)
+			curve[i,0] = len(thrnew) / len(new)
+
+		_auc = auc(curve[:,0],curve[:,1])
+		return _auc
+	
+	def collect_roc(self, sub):
+		#this is the number of rows corresponding to just the recognition memroy runs
+		phase5 = list(range(408,648))
+		#create a series that labels the index of the trials with the name of the phase
+		_phase_name = np.array(((['baseline'] * 48) + (['fear_conditioning'] * 48) + (['extinction'] * 48)))
+		_block_index = np.tile(np.repeat((1,2,3,4,5,6),8),3)
+		day1_index = pd.DataFrame([],index=range(144),columns=['phase','block'])
+		day1_index.phase = _phase_name
+		day1_index.block = _block_index
+
+		sub_meta = meta(sub).meta
+		#collect the raw responses from the recognition test
+		respconv = sub_meta['oldnew.RESP'][phase5]
+		#fill in any non-responses with 0
+		respconv = respconv.fillna(0)
+		#collect the old/new attribute for each stim
+		memcond = sub_meta.MemCond[phase5]
+		#collect the CS type for each stim
+		condition = sub_meta.cstype
+
+		#collect stims from baseline and fear conditioning
+		phase1_2_stims = sub_meta.stims[0:96]
+		phase1_stims = phase1_2_stims[0:48]
+		phase2_stims = phase1_2_stims[48:96]
+		
+		#do the same for extinction, but also undo the dumb row expansion that e-prime does with the scene ITIs
+		phase3_stims = pd.Series(0)
+		phase3_unique_loc = pd.Series(0)
+		q = 0
+
+		#this paragraph goes through all the stims and extinciton
+		#and collects unique stim names in their experimental order
+		for loc, unique in enumerate(sub_meta.stims[sub_meta.phase == 'extinction']):
+			if not any(stim == unique for stim in phase3_stims):
+				phase3_stims[q] = unique
+				phase3_unique_loc[q] = loc + 96
+				q = q + 1
+
+		#give it the correct index numbering
+		phase3_stims.index = list(range(96,144))
+		
+		#concatenate all stims from day1
+		day1_stims = pd.Series(np.zeros(144))
+		day1_stims[0:96] = phase1_2_stims
+		day1_stims[96:144] = phase3_stims
+
+		#collect the stims from day2, phase5 (much easier)
+		day2_stims = sub_meta.stims[phase5]
+
+		#get rid of 'stims/' and 'stims2/' in both so they can be compared
+		day1_stims = day1_stims.str.replace('stims/','')
+		day2_stims = day2_stims.str.replace('stims2/','')
+
+		#lastely, make a variable for all of the day1 conditions, counter-acting how eprime fucks up extinciton
+		day1_condition = pd.Series(np.zeros(144))
+		day1_condition[0:96] = condition[0:96]
+		day1_condition[96:144] = condition[phase3_unique_loc]
+
+		day1df = pd.DataFrame({'stim':day1_stims.values,
+							   'phase':day1_index.phase.values})
+
+		day2df = pd.DataFrame({'response':respconv.values,
+							   'memcond':memcond.values,
+							   'stim':day2_stims.values,
+							   'condition':condition[phase5].values,
+							   'day1_phase':''})
+
+		day2df = day2df.drop(np.where(day2df.response == 0)[0]).reset_index(drop=True)
+		day2df.loc[np.where(day2df.memcond == 'New')[0],'day1_phase'] = 'foil'
+		for i in day2df.index:
+			if day2df.loc[i,'memcond'] == 'Old':
+				day2df.loc[i,'day1_phase'] = day1df.phase[day1df.stim == day2df.loc[i,'stim']].values[0]
+
+		for phase in ['baseline','fear_conditioning','extinction']:
+				for cond in ['CS+','CS-']:
+					Old = day2df.response[day2df.day1_phase == phase][day2df.condition == cond].values
+					New = day2df.response[day2df.day1_phase == 'foil'][day2df.condition == cond].values
+					self.aucdf.loc[(sub,phase,cond),'auc'] = self.recog_auc(old=Old,new=New)
+
 
 
 	def collect_mem_dat(self, sub, hch=True, exp_res=False, exp_day1=False):
@@ -243,6 +345,7 @@ class recognition_memory():
 				self.block_cr['cr'][sub][phase][block]['CS-'] = ( (self.block_cr['hit_count'][sub][phase][block]['CS-'] / 4) - CSmin_false_alarm_rate)
 				self.block_cr['hit_rate'][sub][phase][block]['CS+'] = (self.block_cr['hit_count'][sub][phase][block]['CS+'] / 4)
 				self.block_cr['hit_rate'][sub][phase][block]['CS-'] = (self.block_cr['hit_count'][sub][phase][block]['CS-'] / 4)
+
 	#combine subject results into group results
 	def mem_stats(self):
 		#reset first and then melt them and then see if you cant get all 4 phases in the same graph

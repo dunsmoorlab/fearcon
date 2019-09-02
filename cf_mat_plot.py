@@ -53,6 +53,7 @@ def plot_confusion_matrix(cm, classes,
         # pdf.savefig()
 
     # else:
+    # if save:
         # plt.savefig(save,dpi=300,bbox_inches='tight',pad_inches=.2)
 
     # plt.close()

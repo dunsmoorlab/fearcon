@@ -650,7 +650,7 @@ class eval_xval(object):
 		group_auc = {}
 
 		for sub in self.sub_args:
-
+			print(sub)
 			sub_decode = loc_decode(subj=sub, name=name, imgs=imgs, rmv_indoor=rmv_indoor, scene_DS=scene_DS, binarize=binarize, del_rest=del_rest,save_dict=save_dict, scene_collapse=scene_collapse, rmv_scram=rmv_scram, k=k, cf=cf)
 			sub_res[sub] = sub_decode.res
 
@@ -712,21 +712,26 @@ class eval_xval(object):
 		self.auc = pd.concat([self.auc['index'].apply(pd.Series), self.auc['auc']],axis=1)#columns=['subject','label','auc'])
 		self.auc.rename({0:'subject',1:'label'},axis=1,inplace=True)
 
+		# self.auc.set_index(['subject'],inplace=True)
+		# self.auc = self.auc.drop(labels=107)
+		# self.auc.reset_index(inplace=True)
 
 		fig, bx = plt.subplots()
-		bx = sns.boxplot(x='label',y='auc',data=self.auc, palette='husl')
-		sns.swarmplot(x='label',y='auc',data=self.auc,color='.25',alpha=.6)
-		bx.axhline(y=.5,color='red',linestyle='--')
-		bx.set_ylim(0,1)
-		if save_dict == ppa_prepped: roi = 'PPA'
+		bx = sns.pointplot(x='label',y='auc',data=self.auc, color='blue',capsize=.05)
+		sns.swarmplot(x='label',y='auc',data=self.auc,color='black',alpha=.6)
+		# bx.axhline(y=.5,color='red',linestyle='--')
+		bx.set_ylim(.5,1)
+		if save_dict == ppa_prepped or save_dict == beta_ppa_prepped: roi = 'PPA'
+		if save_dict == hipp_no_ppa_beta: roi= 'Hipp'
 		else: roi = 'VTC'
 
-		plt.title('%s; imgs = %s; ROI = %s'%(name,imgs,roi))
-		# self.cf_out = pd.DataFrame([],index=self.cf_labels,columns=['avg','err'])
-		# self.cf_out['avg'] = self.cf_rep.mean()
-		# self.cf_out['err'] = self.cf_rep.sem()
 
-		# self.cf_out.to_csv(os.path.join(data_dir,'graphing','classification_report.csv'))
+		plt.title('%s; imgs = %s; ROI = %s'%(name,imgs,roi))
+		self.cf_out = pd.DataFrame([],index=self.cf_labels,columns=['avg','err'])
+		self.cf_out['avg'] = self.cf_rep.mean()
+		self.cf_out['err'] = self.cf_rep.sem()
+
+		self.cf_out.to_csv(os.path.join(data_dir,'graphing','classification_report.csv'))
 
 
 

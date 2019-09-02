@@ -1,10 +1,12 @@
+#the are python
 import os
 import argparse
 import numpy as np
 import pandas as pd
-from toolz import interleave
+
 import sys
 
+# these are all local code
 from fc_config import *
 from fc_behavioral import recognition_memory
 from preprocess_library import meta
@@ -136,7 +138,9 @@ class glm_timing(object):
 					# late = whole.loc[whole.shape[0]/2:]
 					early = whole.loc[:3]
 					late = whole.loc[4:]
-
+				else:
+					early = whole.loc[:whole.shape[0]/2 - 1]
+					late = whole.loc[whole.shape[0]/2:]
 
 					early.to_csv( os.path.join(dest, '%searly_%s.txt'%(resp_string, con)),
 							sep='\t', float_format='%.8e', index=False, header=False)
@@ -150,7 +154,7 @@ class glm_timing(object):
 
 	#create and return a pandas DataFrame for event timing
 	#if con=True, then returns only the trial condition type
-	def phase_events(self,con=False,mem=False,intrx=False,resp=False,er_start=False):
+	def phase_events(self,con=False,mem=False,intrx=False,resp=False,er_start=False,shock=False,stims=False):
 
 		
 		#find the start time
@@ -225,6 +229,33 @@ class glm_timing(object):
 			if er_start:
 				st = pd.DataFrame({'onset':0,'duration':8,'trial_type':'start'},index=[0])
 				self.phase_timing = pd.concat([st,self.phase_timing]).reset_index(drop=True)
+
+		#make shock timings just straight to fsl format for now
+		if self.phase == 'fearconditioning' and shock:
+			self.proc = self.phase_meta['Procedure[Block]']
+			self.proc.index = range(48)
+			self.shock = self.phase_timing[self.proc=='CSUS']
+			self.shock.onset = self.shock.onset + self.shock.duration
+			self.shock.duration = 0
+			self.shock['PM'] = 1
+			self.shock.drop('trial_type',axis=1,inplace=True)
+			self.shock = self.shock[['onset','duration','PM']]
+			dest = os.path.join(self.subj.model_dir, 'GLM/onsets', py_run_key[self.phase_name])
+			self.shock.to_csv( os.path.join(dest, 'all_shock.txt'),
+						sep='\t', float_format='%.8e', index=False, header=False)
+			self.shock.index = range(12)
+			early = self.shock.loc[:self.shock.shape[0]/2 - 1]
+			late = self.shock.loc[self.shock.shape[0]/2:]
+
+			early.to_csv( os.path.join(dest, 'early_shock.txt'),
+					sep='\t', float_format='%.8e', index=False, header=False)
+		
+			late.to_csv( os.path.join(dest, 'late_shock.txt'),
+					sep='\t', float_format='%.8e', index=False, header=False)
+
+		if stims:
+			self.phase_timing['stim'] = self.phase_meta.stims.values
+			self.phase_timing['stim'] = self.phase_timing.stim.str.replace('stims/','')
 
 		if con:
 			return self.phase_timing.trial_type
@@ -364,14 +395,17 @@ class glm_timing(object):
 			return block_events
 
 
-	def mem_events(self):
+	def mem_events(self,stims=False):
 		
 		if 'memory' not in self.phase:
 			print('this is only for memory runs, pls stop')
 			sys.exit()
 
-		mem_events = self.phase_events()
-		
+		mem_events = self.phase_events(stims=stims)
+		if stims:
+			self.phase_timing['stim'] = self.phase_timing.stim.str.replace('stims2/','')
+
+
 		phase_index = self.phase_meta.index
 
 		raw_response, memcond, day1_where = recognition_memory.collect_mem_dat(self, self.subj.num, hch=True, exp_res=True)
