@@ -1,0 +1,649 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"n",
+				"n_colors"
+			],
+			[
+				"cluster",
+				"cluster_centers_"
+			],
+			[
+				"image",
+				"image_array_sample"
+			],
+			[
+				"_",
+				"_coefs_"
+			],
+			[
+				"sub",
+				"subdat"
+			],
+			[
+				"from",
+				"from_product"
+			],
+			[
+				"block",
+				"block_phases"
+			],
+			[
+				"df",
+				"df_condition"
+			],
+			[
+				"hippoca",
+				"hippocampus_beta"
+			],
+			[
+				"in",
+				"inplace"
+			],
+			[
+				"wi",
+				"width_cm"
+			],
+			[
+				"dic",
+				"distance_cm"
+			],
+			[
+				"op",
+				"op_decode"
+			],
+			[
+				"extion",
+				"extinction_recall"
+			],
+			[
+				"labe",
+				"labels"
+			],
+			[
+				"g",
+				"g"
+			],
+			[
+				"ex",
+				"extinction_recall"
+			],
+			[
+				"pa",
+				"palette"
+			],
+			[
+				"extin",
+				"extinction"
+			],
+			[
+				"Lo",
+				"LOCALIZER_2"
+			],
+			[
+				"set_y",
+				"set_ylim"
+			],
+			[
+				"yes",
+				"Yes"
+			],
+			[
+				"CI",
+				"CI_high"
+			],
+			[
+				"boo",
+				"bootstrap_subs"
+			],
+			[
+				"stim",
+				"stimulus"
+			],
+			[
+				"hr_",
+				"hr_"
+			],
+			[
+				"_F",
+				"_F"
+			],
+			[
+				"forget_",
+				"forget_collapse"
+			],
+			[
+				"resp",
+				"respconv"
+			],
+			[
+				"ext",
+				"extinction"
+			],
+			[
+				"fear",
+				"fear_conditioning"
+			],
+			[
+				"me",
+				"memory_run_3"
+			],
+			[
+				"memo",
+				"memory_run_2"
+			],
+			[
+				"day1",
+				"day1_stims"
+			],
+			[
+				"day2",
+				"day2_stims"
+			],
+			[
+				"conver",
+				"convert_respose"
+			],
+			[
+				"first",
+				"first_csp"
+			],
+			[
+				"memory",
+				"memory_phase"
+			],
+			[
+				"CS",
+				"CSmin_false_alarm_rate"
+			],
+			[
+				"false",
+				"false_alarm"
+			],
+			[
+				"test_beta",
+				"test_beta_labels"
+			],
+			[
+				"test",
+				"test_data"
+			],
+			[
+				"test_bet",
+				"test_beta_labels"
+			],
+			[
+				"loca",
+				"localizer_2"
+			],
+			[
+				"memor",
+				"memory_run_3"
+			],
+			[
+				"effec",
+				"effect_map"
+			],
+			[
+				"pyGLM",
+				"pyGLM_dir"
+			],
+			[
+				"con",
+				"contrasts"
+			],
+			[
+				"contra",
+				"contrast_matrix"
+			],
+			[
+				"ana",
+				"anatomical"
+			],
+			[
+				"nr5cfmat",
+				"nr5_cfmat2"
+			],
+			[
+				"nr5_cl",
+				"nr5_clf1_res"
+			],
+			[
+				"s",
+				"s"
+			],
+			[
+				"label",
+				"label"
+			],
+			[
+				"local",
+				"localizer_2"
+			],
+			[
+				"bp",
+				"bp_PM"
+			],
+			[
+				"conca",
+				"concatenate"
+			],
+			[
+				"Exint",
+				"Extinction_Recall"
+			],
+			[
+				"REs",
+				"Response"
+			],
+			[
+				"shock",
+				"shock_expectancy"
+			],
+			[
+				"shoc",
+				"shock_expectancy"
+			],
+			[
+				"shc",
+				"shock_expectancy"
+			],
+			[
+				"phase3_",
+				"phase3_unique_loc"
+			],
+			[
+				"data",
+				"data_byphase"
+			],
+			[
+				"csmin",
+				"CSmin_false_alarm_rate"
+			],
+			[
+				"fa",
+				"CSplus_false_alarm_rate"
+			],
+			[
+				"exint",
+				"extinction_csmin"
+			],
+			[
+				"extinc",
+				"extinction_csplus"
+			],
+			[
+				"base",
+				"baseline_csmin"
+			],
+			[
+				"baseline",
+				"baseline_csplus"
+			],
+			[
+				"fsl",
+				"fslregister"
+			],
+			[
+				"run",
+				"runtype"
+			],
+			[
+				"cst",
+				"cstype"
+			],
+			[
+				"cstype",
+				"cs_type"
+			],
+			[
+				"scene",
+				"scene_weight"
+			],
+			[
+				"scnee",
+				"scene_weight"
+			],
+			[
+				"scen",
+				"scene_weight"
+			],
+			[
+				"uni",
+				"unique_trials"
+			],
+			[
+				"un",
+				"unique_trials"
+			],
+			[
+				"CSpl",
+				"CSplus_false_alarm_rate"
+			],
+			[
+				"old",
+				"old"
+			],
+			[
+				"new",
+				"new"
+			],
+			[
+				"fasel_",
+				"false_alarm_rate"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 298.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"package",
+				"Package Control: List Packages"
+			],
+			[
+				"theme",
+				"UI: Select Theme"
+			],
+			[
+				"package control insta",
+				"Package Control: Install Package"
+			],
+			[
+				"package contro",
+				"Package Control: Add Channel"
+			]
+		],
+		"width": 831.0
+	},
+	"console":
+	{
+		"height": 261.0,
+		"history":
+		[
+			"%run quiz2.py"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/ACH/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/profiles.json",
+		"/C/Users/ACH/Documents/acnn_big_data_conf.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/fc_memory_study/README.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/login.sh",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/univariate_various.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/Dunsmoor Lab/posgen/gengraph.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/Dunsmoor Lab/posgen/curve_fit.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/preprocess_library.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/Dunsmoor Lab/posgen/curve_fit (ACH's conflicted copy 2019-09-17).py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/Dunsmoor Lab/posgen/gengraph (ACH's conflicted copy 2019-09-17).py",
+		"/C/Users/ACH/Dropbox (Personal)/readordie/_posts/2019-08-30-wang-2019-cognition.md",
+		"/C/Users/ACH/Dropbox (Personal)/readordie/_posts/2019-09-08-emotional_memory_lit.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fc2plan.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fc_config.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/rotation_project.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/glm_timing.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/ex_behavioral.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/ex_config.py",
+		"/C/Users/ACH/Documents/BioshockHD/Bioshock/SaveGames/6_25_2018_23_2_49.bsb",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Maps/Commute routes/Commute routes.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Maps/Added dishes, products, activities/Added dishes, products, activities.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Profile/Profile.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Maps (your places)/Saved Places.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Google Photos/2016-09-24/IMG_20160924_195353.jpg.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Google Photos/2017-03-01/metadata.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Maps/Commute settings/Commute settings.json",
+		"/C/Users/ACH/AppData/Local/Temp/Temp1_takeout-20190810T125102Z-001.zip/Takeout/Home App/HomeApp.json",
+		"/C/Users/ACH/Desktop/custom_bids/README.md",
+		"/C/Users/ACH/Desktop/custom_bids/custom_bids.py",
+		"/C/Users/ACH/Desktop/CCX-bids/README",
+		"/C/ProgramData/Anaconda3/Scripts/dcm2bids.py",
+		"/C/ProgramData/Anaconda3/envs/neurobrite/Lib/site-packages/mne/utils/config.py",
+		"/C/Users/ACH/Downloads/SKU948385/README.txt",
+		"/C/Users/ACH/Documents/rothko/rgb.py",
+		"/C/Users/ACH/Documents/rothko/rothko.py",
+		"/C/ProgramData/Anaconda3/Scripts/dcm2bids",
+		"/C/ProgramData/Anaconda3/envs/neurobrite/Lib/urlparse.py",
+		"/C/Users/ACH/Documents/Arduino/libraries/readme.txt",
+		"/C/Users/ACH/Documents/Album_Art/scrap.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/nbc19.py",
+		"/C/ProgramData/Anaconda3/Lib/site-packages/pingouin/regression.py",
+		"/C/Users/ACH/Documents/DirectCat/letstrypy.py",
+		"/C/Users/ACH/Dropbox (Personal)/CompNeuro/quiz2.py",
+		"/C/Users/ACH/opencv/sources/CMakeLists.txt",
+		"/C/Users/ACH/opencv/sources/README.md",
+		"/C/Users/ACH/opencv/README.md.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/beta_rsa_graph.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/beta_rsa.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/Dunsmoor Lab/posgen/pg_config.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fc_decoding.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/RetroPress/retropress/rp_config.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/wrapper4preprocess.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/bids_convert.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/RetroPress/retropress/rp_behavioral.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/cns19.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/lighthouse.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/op_decode.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/sfn18.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/spectral_power.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/mvpa_analysis.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/group_stats.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/old_code/splash.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/old_code/old_behav_depricated.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/old_code/example.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/group_mem.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fc_behavioral.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/behavioral_graphing.py",
+		"/C/Users/ACH/Documents/yup/test_class.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/signal_change.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/mvpa_analysis_graphing.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/cns18.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fsl_stats.sh",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Group_GLM/run004/ptsd_ev_corr/cope3.feat/rand_design.con",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Group_GLM/run004/ptsd_ev_corr/cope3.feat/rand_design.mat",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Group_GLM/run004/control_ev_corr/cope3.feat/rand_design.con",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Group_GLM/run004/control_ev_corr/cope3.feat/rand_design.mat",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/beta_rsa (Augustin Hennings's conflicted copy 2018-11-13).py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/rsa_wrapper.py",
+		"/C/Users/ACH/AppData/Roaming/Sublime Text 3/Packages/Package Control/Package Control.sublime-settings",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Sub123/model/GLM/onsets/run002/early_CS-.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Sub001/model/GLM/onsets/run002/resp_all_CS-.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Sub001/model/GLM/onsets/run002/early_CS+.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/clf_comp.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/scr_analysis_instructions.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/comfee_task.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/scr_analysis.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/instructions_day1.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/task_day1.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/ExPress/task_r.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/scr_analysis_fcp.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/exponential_decay.py",
+		"/C/Users/ACH/Downloads/BetterJoyForCemu_v6-Nightly-1_x64/Nefarius.ViGEmClient.dll",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/localizer_decoding.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/wesanderson.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/cf_mat_plot.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/beta_helper.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/stats.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/daaamm.py",
+		"/C/Users/ACH/Desktop/ptsd_er_pm.gfeat/design.fsf",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/Sub001/fsl_reg/func2struct.mat",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/tacc_copy.sh",
+		"/C/Users/ACH/Downloads/nifti2numpy.py",
+		"/C/Users/ACH/Downloads/-.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/localizer_glm.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/mvpa_analysis_graphing (Augustin Hennings's conflicted copy 2018-05-10).py",
+		"/C/Users/ACH/Desktop/bootstrap_code.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/RetroPress/CodeBase/rp_behavioral.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/decode_vis.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/qq.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/qqqq.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/xval_fun.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/tacc_move.py",
+		"/C/Users/ACH/Documents/nistats/nistats/version.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/test.py",
+		"/C/Users/ACH/Documents/nistats/nistats/contrasts.py",
+		"/C/Users/ACH/Documents/nistats/nistats/first_level_model.py",
+		"/C/Users/ACH/Documents/nistats/nistats/model.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/RetroPress/CodeBase/rpb_config.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/roi_notes.md",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/RetroPress/RPB06/RPB06_note.txt",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fat/model/betaseries.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fat/model/estimate_betaseries.py",
+		"/C/Users/ACH/Documents/nistats/nistats/regression.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/fat/model/clustsim_cope.sh",
+		"/C/ProgramData/Anaconda3/Lib/site-packages/nistats/first_level_model.py",
+		"/C/Users/ACH/Documents/nistats/nistats/utils.py",
+		"/C/Users/ACH/Documents/nistats/nistats/experimental_paradigm.py",
+		"/C/Users/ACH/Dropbox (LewPeaLab)/STUDY/FearCon/CodeBase/mvpa_analysis (Augustin Hennings's conflicted copy 2018-03-22).py"
+	],
+	"find":
+	{
+		"height": 49.3333333333
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 36.0
+	},
+	"input":
+	{
+		"height": 90.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "scr_analysis.sublime-project",
+	"replace":
+	{
+		"height": 68.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"__init__"
+			]
+		],
+		"width": 592.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 283.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -13,7 +13,8 @@ from glm_timing import glm_timing
 from mvpa_analysis import group_decode
 from signal_change import collect_ev
 from scipy.stats import linregress as lm
-
+from scipy.interpolate import interp1d
+from numpy.polynomial.polynomial import polyfit
 
 
 sns.set_context('talk')
@@ -102,21 +103,40 @@ gTR.reset_index(inplace=True)
 colors = ['grey','purple']
 hatches = ['x','.']
 edgecolors = ['purple','none']
+lines = ['--','-']
 W = [1,1]
 A = [.5,.5]
 fig, ax = plt.subplots(1,2,sharey=True)
 for g, group in enumerate(gTR.group.unique()):
     data = gTR.query('group == @group')
-    sns.lineplot(x='tr',y='avg',hue='response',data=data,style='response',style_order=['no','expect'],
-                      palette=['grey','purple'],ax=ax[g])
-    ax[g].set_xticks(data.tr.unique())
-    ax[g].legend_.remove();ax[g].set_xlim(-2,1)
+    # sns.lineplot(x='tr',y='avg',hue='response',data=data,style='response',style_order=['no','expect'],
+    #                   palette=['grey','purple'],ax=ax[g])
+    # ax[g].set_xticks(data.tr.unique())
+    # ax[g].legend_.remove();ax[g].set_xlim(-2,1)
     for i, resp in enumerate(gTR.response.unique()):
         dat = data[data.response == resp]
-        ax[g].fill_between(ax[g].get_xticks(),dat.avg-dat.err,dat.avg+dat.err,alpha=A[i],
-        	color=colors[i])
-        sns.despine(ax=ax[g])
-sTR = TR.groupby(['subject','response','group']).mean()['evidence'].reset_index()
+        # ax[g].fill_between(ax[g].get_xticks(),dat.avg-dat.err,dat.avg+dat.err,alpha=A[i],
+        # 	color=colors[i])
+        
+        # get mean/sem per TR for current class
+        mean_vals = dat.avg
+        uppersem_vals = mean_vals + dat.err
+        lowersem_vals = mean_vals - dat.err
+        # interpolate
+        x_interp = pd.np.linspace(xvals.min(),xvals.max(),1000,endpoint=True)
+        up_spliner = interp1d(xvals,uppersem_vals,kind='cubic')
+        lo_spliner = interp1d(xvals,lowersem_vals,kind='cubic')
+        mean_spliner = interp1d(xvals,mean_vals,kind='cubic')
+
+        uppersem_interp = up_spliner(x_interp)
+        lowersem_interp = lo_spliner(x_interp)
+        mean_interp = mean_spliner(x_interp)
+        # draw
+        ax[g].plot(x_interp,mean_interp,color=colors[i],linestyle=lines[i])
+        ax[g].fill_between(x_interp,uppersem_interp,lowersem_interp,
+                        color=colors[i],alpha=A[i])
+        sns.despine(ax=ax[g]);ax[g].set_xlim(-2,1)
+
 
 CN = sTR.evidence[sTR.group == 'control'][sTR.response == 'no'].copy()
 CE = sTR.evidence[sTR.group == 'control'][sTR.response == 'expect'].copy()

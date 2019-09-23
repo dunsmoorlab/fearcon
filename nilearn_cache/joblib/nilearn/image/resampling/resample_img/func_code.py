@@ -1,7 +1,7 @@
-# first line: 290
+# first line: 301
 def resample_img(img, target_affine=None, target_shape=None,
                  interpolation='continuous', copy=True, order="F",
-                 clip=True, fill_value=0):
+                 clip=True):
     """Resample a Niimg-like object
 
     Parameters
@@ -39,9 +39,6 @@ def resample_img(img, target_affine=None, target_shape=None,
         0 is added as an image value for clipping, and it is the padding
         value when extrapolating out of field of view.
         If False no clip is preformed.
-
-    fill_value: float, optional
-        Use a fill value for points outside of input volume (default 0).
 
     Returns
     -------
@@ -224,18 +221,19 @@ def resample_img(img, target_affine=None, target_shape=None,
     else:
         resampled_data_dtype = data.dtype
 
-    # Since the release of 0.17, resampling nifti images have some issues
-    # when affine is passed as 1D array and if data is of non-native
-    # endianess.
-    # See issue https://github.com/nilearn/nilearn/issues/1445.
-    # If affine is passed as 1D, scipy uses _nd_image.zoom_shift rather
-    # than _geometric_transform (2D) where _geometric_transform is able
-    # to swap byte order in scipy later than 0.15 for nonnative endianess.
+    if LooseVersion(scipy.__version__) >= LooseVersion('0.17'):
+        # Since the release of 0.17, resampling nifti images have some issues
+        # when affine is passed as 1D array and if data is of non-native
+        # endianess.
+        # See issue https://github.com/nilearn/nilearn/issues/1445.
+        # If affine is passed as 1D, scipy uses _nd_image.zoom_shift rather
+        # than _geometric_transform (2D) where _geometric_transform is able
+        # to swap byte order in scipy later than 0.15 for nonnative endianess.
 
-    # We convert to 'native' order to not have any issues either with
-    # 'little' or 'big' endian data dtypes (non-native endians).
-    if len(A.shape) == 1 and not resampled_data_dtype.isnative:
-        resampled_data_dtype = resampled_data_dtype.newbyteorder('N')
+        # We convert to 'native' order to not have any issues either with
+        # 'little' or 'big' endian data dtypes (non-native endians).
+        if len(A.shape) == 1 and not resampled_data_dtype.isnative:
+            resampled_data_dtype = resampled_data_dtype.newbyteorder('N')
 
     # Code is generic enough to work for both 3D and 4D images
     other_shape = data_shape[3:]
@@ -251,8 +249,7 @@ def resample_img(img, target_affine=None, target_shape=None,
         _resample_one_img(data[all_img + ind], A, b, target_shape,
                           interpolation_order,
                           out=resampled_data[all_img + ind],
-                          copy=not input_img_is_string,
-                          fill_value=fill_value)
+                          copy=not input_img_is_string)
 
     if clip:
         # force resampled data to have a range contained in the original data

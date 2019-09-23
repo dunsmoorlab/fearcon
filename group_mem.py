@@ -46,6 +46,8 @@ c_csm = res.phase_err.loc[np.where(res.phase_err['condition'] == 'CS-')[0]]
 p_csp = pres.phase_err.loc[np.where(pres.phase_err['condition'] == 'CS+')[0]]
 p_csm = pres.phase_err.loc[np.where(pres.phase_err['condition'] == 'CS-')[0]]
 
+sns.set_context('talk');sns.set_style('ticks')
+
 fig, ax = plt.subplots()
 width = 0.2
 ind1 = np.arange(4)
@@ -66,6 +68,7 @@ ax.set_xticklabels(['baseline','fear_conditioning','extinction','false_alarms'])
 ax.set_ylim([0,.7])
 pretty_graph(ax=ax, xlab='Phase', ylab='Corrected Recognition', main='CR by Phase with SEM', legend=True)
 ax.legend((c_CSP[0],c_CSM[0], p_CSP[0], p_CSM[0]), ('CS+, control', 'CS-, control', 'CS+, PTSD', 'CS-, PTSD'), fontsize='larger')
+sns.despine(ax=ax)
 fig.set_size_inches(9, 5.5)
 plt.tight_layout()
 # plt.savefig(os.path.join(data_dir,'graphing', 'cns', 'hch_CR_mem.png'))
@@ -100,6 +103,11 @@ for phase in memory_phase:
 # fig.set_size_inches(8, 6.5)
 # fig.savefig(os.path.join(data_dir,'graphing','memory','group_cr.png'), dpi=300)
 
+#look for the actual CS+ > CS- effect
+for group in ['control','ptsd']:
+	for phase in memory_phase:
+		print(group,phase)
+		print(ttest_rel(group_stats.cr.loc[group,phase,'CS+'],group_stats.cr.loc[group,phase,'CS-']))
 
 # ####ROC AUC####
 # res = recognition_memory().aucdf

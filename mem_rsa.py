@@ -345,7 +345,7 @@ def feat_hack():
 
 
 
-class group_mem_rsa():
+class group_roi_rsa():
 
     def __init__(self,mask=None):
 
@@ -528,54 +528,5 @@ class group_mem_rsa():
         #         sns.despine(ax=ax[i,j])
         #         if not i + j == 0: ax[i,j].legend_.remove()
         # fig.suptitle(self.mask)
-
-def create_mem_dfs():
-    mem_phases = ['memory_run_1','memory_run_2','memory_run_3']
-    df = {}
-    for sub in all_sub_args:
-        sub_df = {}
-
-        for phase in mem_phases: sub_df[phase] = glm_timing(sub,phase).mem_events()
-
-        sub_df = pd.concat(sub_df.values())
-
-        sub_df = sub_df[sub_df.memcond.isin(['Old'])].reset_index(drop=True)
-        sub_df = sub_df.drop(columns=['onset','duration','memcond'])
-        
-        sub_df['subject'] = sub
-        
-        if sub in sub_args: sub_df['group'] = 'control'
-        if sub in p_sub_args: sub_df['group'] = 'ptsd'
-
-        sub_df.acc = (sub_df.acc == 'H').astype(int)
-        sub_df.hc_acc = (sub_df.hc_acc == 'H').astype(int)
-        
-        df[sub] = sub_df
-
-    df = pd.concat(df.values()).reset_index(drop=True)
-    df['rsa'] = 0
-
-    #loading data
-    data = np.load(os.path.join(data_dir,'group_ER','all_subs_std_item_ER.npy'))
-    for i in range(data.shape[2]):
-        vdf = df.copy()
-        vdf.rsa = data[:,:,i].flatten()
-        
-        outstr = os.path.join(data_dir,'group_ER','voxel_dfs','voxel_%s.csv'%(i))
-        vdf.to_csv(outstr,index=False)
-
-    #knowing which subs to exlude from memory anovas
-    lc_remove = np.ndarray(0)
-    hc_remove = np.ndarray(0)
-    for sub in all_sub_args:
-        for phase in df.encode.unique():
-            for con in df.trial_type.unique():
-                for mem_cond in [0,1]:
-                    if np.where(df.acc[df.subject == sub][df.encode == phase][df.trial_type == con] == mem_cond)[0].shape[0] < 5:
-                        lc_remove = np.append(lc_remove,sub)
-                    if np.where(df.hc_acc[df.subject == sub][df.encode == phase][df.trial_type == con] == mem_cond)[0].shape[0] < 5:    
-                        hc_remove = np.append(hc_remove,sub)
-    lc_remove = np.unique(lc_remove)
-    hc_remove = np.unique(hc_remove)
 
 

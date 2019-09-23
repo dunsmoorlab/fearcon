@@ -9,7 +9,22 @@ import matplotlib.pyplot as plt
 from wesanderson import wes_palettes
 import pingouin as pg
 from scipy.stats import iqr
+import subprocess
 
+
+def fastcopy(source,dest):        
+    if sys.platform.startswith('win'):
+        if os.path.isdir(source):    cmd = ['xcopy', str(source), dest, '/K /X /i /s']
+        elif os.path.isfile(source): cmd = ['xcopy', source, dest, '/K /X']
+    else:
+        if os.path.isdir(source):    cmd = ['cp', '-r', source, dest]
+        elif os.path.isfile(source): cmd = ['cp', source, dest]
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def mkdir(x):
+    if not os.path.exists(x):
+        os.mkdir(x)
 
 def lgroup(x):
     if x > 100: return 'ptsd'
@@ -68,6 +83,8 @@ def rm_out(x):
     return y
 gpal = list((wes_palettes['Zissou'][0],wes_palettes['Royal1'][1]))
 cpal = ['darkorange','grey']
+cpoint = sns.color_palette(cpal,n_colors=2,desat=.75)
+
 def barstrip(df,vals,cond=False,points='swarm',ax=False):
     sns.set_context('talk');sns.set_style('ticks')
     #color palettes
