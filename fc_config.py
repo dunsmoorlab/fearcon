@@ -11,7 +11,10 @@ import pingouin as pg
 from scipy.stats import iqr
 import subprocess
 
-
+sns.set_context('talk')
+sns.set_style('ticks',rc={'axes.spines.right':False,
+                          'axes.spines.top'  :False,
+                          })
 def fastcopy(source,dest):        
     if sys.platform.startswith('win'):
         if os.path.isdir(source):    cmd = ['xcopy', str(source), dest, '/K /X /i /s']

@@ -15,6 +15,7 @@ from signal_change import collect_ev
 from scipy.stats import linregress as lm
 from scipy.interpolate import interp1d
 from numpy.polynomial.polynomial import polyfit
+from scipy.stats import ttest_ind
 
 
 sns.set_context('talk')
@@ -363,7 +364,7 @@ corr_plot([crmod,prmod])
 ###########################################
 #RSA subject
 # for roi in ['mOFC','dACC','amygdala','insula','hippocampus']:
-roi = 'PPA'
+roi = 'mOFC'
 label = 'e__e_r'
 print(roi)
 p = pd.read_csv(os.path.join(data_dir,'graphing','beta_rsa','%s_csp.csv'%(roi)))
@@ -406,8 +407,8 @@ sns.swarmplot(x='group',y='comp',data=rsa_comp,dodge=True)
 ####################################################
 #better rsa graphing
 # for roi in ['mOFC','dACC','amygdala','insula','hippocampus','PPA']:
-for roi in ['hippocampus','PPA']:
-# for roi in ['mOFC']:
+# for roi in ['hippocampus','PPA']:
+for roi in ['mOFC']:
     mR = pd.read_csv(os.path.join(data_dir,'graphing','beta_RSA','%s_collected_rsa.csv'%(roi)))
     mR = pd.DataFrame({
         'z': np.concatenate((mR.c_e_p,mR.c_e_m,mR.p_e_p,mR.p_e_m)),

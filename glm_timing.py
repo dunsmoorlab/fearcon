@@ -230,8 +230,9 @@ class glm_timing(object):
 				st = pd.DataFrame({'onset':0,'duration':8,'trial_type':'start'},index=[0])
 				self.phase_timing = pd.concat([st,self.phase_timing]).reset_index(drop=True)
 
-		self.proc = self.phase_meta['Procedure[Block]']
-		self.proc.index = range(48)
+		if 'mem' not in self.phase:
+			self.proc = self.phase_meta['Procedure[Block]']
+			self.proc.index = range(48)
 
 		#make shock timings just straight to fsl format for now
 		if self.phase == 'fearconditioning' and shock:
