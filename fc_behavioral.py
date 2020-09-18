@@ -16,12 +16,13 @@ class recognition_memory():
 	def __init__(self, p=False, hch=False): 
 
 		if not p:
-			# self.sub_args = self.exclude_subs(old=sub_args, exclude=[])
-			self.sub_args = self.exclude_subs(old=sub_args, exclude=[18,20])
+		# 	self.sub_args = self.exclude_subs(old=sub_args, exclude=[])
+		# 	# self.sub_args = self.exclude_subs(old=sub_args, exclude=[18,20])
+			self.sub_args = sub_args 
 		elif p:
-			self.sub_args = self.exclude_subs(old=working_subs, exclude=[120])
+			# self.sub_args = self.exclude_subs(old=working_subs, exclude=[120])
 			# self.sub_args = self.exclude_subs(old=p_sub_args, exclude=[])
-
+			self.sub_args = p_sub_args
 
 		self.create_output_structures()
 

@@ -10,11 +10,14 @@ from wesanderson import wes_palettes
 import pingouin as pg
 from scipy.stats import iqr
 import subprocess
+from scipy.interpolate import interp1d
 
 sns.set_context('talk')
 sns.set_style('ticks',rc={'axes.spines.right':False,
                           'axes.spines.top'  :False,
                           })
+def zero(ax):
+    ax.hlines(0,ax.get_xlim()[0],ax.get_xlim()[1],color='grey',linestyle='--',linewidth=3)
 def fastcopy(source,dest):        
     if sys.platform.startswith('win'):
         if os.path.isdir(source):    cmd = ['xcopy', str(source), dest, '/K /X /i /s']
@@ -24,6 +27,25 @@ def fastcopy(source,dest):
         elif os.path.isfile(source): cmd = ['cp', source, dest]
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def interp(x,point,ci):
+    if 'series' in str(type(ci)):
+      lower = ci.apply(pd.Series)[0].values
+      upper = ci.apply(pd.Series)[1].values
+
+    if 'series' in str(type(point)): point = point.values
+    if type(x) is range: x = np.array(x)    
+    x_interp = np.linspace(x.min(),x.max(),1000,endpoint=True)
+
+    up_spliner = interp1d(x,upper,kind='cubic')
+    lo_spliner = interp1d(x,lower,kind='cubic')
+    mean_spliner = interp1d(x,point,kind='cubic')
+
+    upper_interp = up_spliner(x_interp)
+    lower_interp = lo_spliner(x_interp)
+    mean_interp = mean_spliner(x_interp)
+
+    return mean_interp, lower_interp, upper_interp
 
 def mkdir(x):
     if not os.path.exists(x):
@@ -186,7 +208,8 @@ all_no107 = [sub for sub in all_no107 if sub is not 107]
 
 working_subs = [101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,120,121]
 # working_subs = [101,102,103,104,105,106,108,109,110,111,112,113,114,115,]
-
+subjects = {'control':sub_args,
+            'ptsd'   :p_sub_args}
 def get_subj_dir(subj):
 
     return os.path.join(data_dir, 'Sub{0:0=3d}'.format(subj))

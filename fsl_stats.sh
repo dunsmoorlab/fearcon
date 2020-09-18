@@ -10,7 +10,7 @@ randomise -i filtered_func_data -m mask -o onesamp_t/greater_zero -1 -T -n 5000 
 #two sample t-test
 #have to make the design matrix and contrast file using Glm_gui
 randomise -i two_samp_data -o two_samp/twosamp -d two_samp/desmat.mat -t two_samp/desmat.con -T -n -v 5
-
+randomise -i all_csp_csm.nii.gz -o ${OUTDIR}/group_res -d ${OUTDIR}/group_comp.mat -t ${OUTDIR}/group_comp.mat -e ${OUTDIR}/group_comp.grp -D -T -n 1000 -v 5
 #min/max in an image
 fslstats tfce_corrp_tstat1.nii.gz -R
 
@@ -46,4 +46,6 @@ randomise -i $WORK/group_glm/searchlight/stats/all_rnw.nii.gz -o $WORK/group_glm
 randomise -i $WORK/group_glm/searchlight/stats/all_ext.nii.gz -o $WORK/group_glm/searchlight/stats/ext_2samp -d $WORK/group_glm/searchlight/stats/rand_2samp.mat -t $WORK/group_glm/searchlight/stats/rand_2samp.con -e $WORK/group_glm/searchlight/stats/rand_2samp.grp -T -n 1000 -T -v 5
 randomise -i $WORK/group_glm/searchlight/stats/all_day1.nii.gz -o $WORK/group_glm/searchlight/stats/day1_2samp -d $WORK/group_glm/searchlight/stats/rand_2samp.mat -t $WORK/group_glm/searchlight/stats/rand_2samp.con -T -n 1000 -T -v 5
 
-
+/work/05426/ach3377/lonestar/group_glm/run002/US/run002_comp_US.gfeat
+/work/05426/ach3377/lonestar/group_glm/run003/full/run003_comp_lin.gfeat
+/work/05426/ach3377/lonestar/group_glm/run004/group_run004_full_ntd.gfeat

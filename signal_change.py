@@ -18,10 +18,10 @@ from nilearn.input_data import NiftiMasker
 
 from scipy.stats import sem, ttest_ind, ttest_rel
 import numpy as np
-from statsmodels.formula.api import ols
-from statsmodels.stats.anova import anova_lm
+# from statsmodels.formula.api import ols
+# from statsmodels.stats.anova import anova_lm
 import seaborn as sns
-import statsmodels.api as sm
+# import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from preprocess_library import *
 from glm_timing import *
@@ -118,10 +118,10 @@ def collect_ev(imgs='tr',nvox='all',SC=True,S_DS=True,rmv_scram=True,rmv_ind=Fal
 		out_init['Group'].loc[ptsd] = 'PTSD'
 
 	out.reset_index(inplace=True)
-	out = out.rename_axis({'index':'subject'},axis=1)
+	out = out.rename(columns={'index':'subject'})
 
 	out_init.reset_index(inplace=True)
-	out_init = out_init.rename_axis({'index':'subject'},axis=1)
+	out_init = out_init.rename(columns={'index':'subject'})
 
 	out.to_csv(os.path.join(data_dir,'graphing','signal_change','mvpa_ev.csv'),index=False)
 	out_init.to_csv(os.path.join(data_dir,'graphing','signal_change','mvpa_init_ev.csv'),index=False)
@@ -216,7 +216,7 @@ def run_featquery(sub=None,roi=None,run=0):
 	# os.system('featquery 1 %s/%s/lin_run00%s.feat 8 stats/pe1 stats/pe2 stats/pe3 stats/pe4 stats/cope1 stats/cope2 stats/cope3 stats/cope4 %s_beta %s/%s/%s_mask.nii.gz'%(feat_dest,subj.fsub,run,roi,feat_dest,subj.fsub,roi))
 
 
-def manual_psc(subs=all_sub_args):
+def manual_featquery(subs=all_sub_args):
 	copes = os.path.join(data_dir,'rsa_copes')
 	rois = ['amygdala','mOFC','vmPFC','hippocampus','PPA','dACC']
 	labels = ['baseline','fear','ext','early_fear','late_fear','early_ext','late_ext','early_rnw','late_rnw']

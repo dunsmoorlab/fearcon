@@ -210,7 +210,7 @@ class glm_timing(object):
 					day1_phase = 'fear_conditioning'
 				else:
 					day1_phase = self.phase
-				day1_memory = recognition_memory.collect_mem_dat(self, self.subj.num, hch=True, exp_day1=day1_phase)
+				day1_memory = recognition_memory.collect_mem_dat(self, self.subj.num, hch=mem, exp_day1=day1_phase)
 				day1_memory.index = range(len(day1_memory))
 
 		#convert onset and duration to seconds
@@ -230,13 +230,10 @@ class glm_timing(object):
 				st = pd.DataFrame({'onset':0,'duration':8,'trial_type':'start'},index=[0])
 				self.phase_timing = pd.concat([st,self.phase_timing]).reset_index(drop=True)
 
-		if 'mem' not in self.phase:
-			self.proc = self.phase_meta['Procedure[Block]']
-			self.proc.index = range(48)
-
 		#make shock timings just straight to fsl format for now
 		if self.phase == 'fearconditioning' and shock:
-
+			self.proc = self.phase_meta["Procedure[Block]"]
+			self.proc.index = range(48)
 			self.shock = self.phase_timing[self.proc=='CSUS']
 			self.shock.onset = self.shock.onset + self.shock.duration
 			self.shock.duration = 0

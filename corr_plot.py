@@ -18,7 +18,7 @@ def corr_plot(df,group):
     cp_vals[np.tril_indices_from(cp_vals,k=-1)] = pg.pairwise_corr(cgc)['p-unc'].values
     cp_vals[3,0], cp_vals[2,1] = cp_vals[2,1], cp_vals[3,0] #numpy fills in the rows first and not the columns so we have to switch 2 values
     cp_text = cp_vals.astype(str)
-    cp_text[np.where(cp_vals > .05)] = ''
+    cp_text[np.where(cp_vals > .05)] 
     cp_text[np.where(cp_vals < .05)] = '*'
     cp_text[np.where(cp_vals < .01)] = '**'
     cp_text[np.where(cp_vals < .001)] = '***'

@@ -3,14 +3,14 @@ import numpy as np
 import pandas as pd
 import pingouin as pg
 import nibabel as nib
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, ttest_rel
 from nilearn.input_data import NiftiMasker
 from fc_config import *
 from glm_timing import glm_timing
 from joblib import Parallel, delayed
 import multiprocessing
 
-def posthocT():
+def vox_df_posthocT():
 	nvox = 77779
 	voxel_dir = os.path.join(data_dir,'group_ER','voxel_dfs')
 	phases = ['baseline','fear_conditioning','extinction']
@@ -42,20 +42,19 @@ def posthocT():
 				outdf[phase+'_'+con+'_'+stat] = out[phase][con][stat]
 	outdf.to_csv(os.path.join(data_dir,'group_ER','stats','group_posthoc.csv'))
 
-def reconstruct_stats(group,test,val):
+def reconstruct_stats(group,test,anova=False):
     masker = NiftiMasker(mask_img='/Users/ach3377/Desktop/standard/MNI152_T1_3mm_brain_mask.nii.gz')
     masker.fit()
     #['no_mem_ANOVA','group_posthoc']
     # test = 'no_mem_ANOVA'
-    df = pd.read_csv(os.path.join(data_dir,'group_ER','pingouin_stats','%s_%s_%s.csv'%(group,test,val)),index_col=0)
-    if val == 'p': df = 1 - df
+    df = pd.read_csv(os.path.join(data_dir,'group_ER','pingouin_stats','%s_%s.csv'%(group,test)),index_col=0)
+    if anova: df = 1 - df
     outdir = os.path.join(data_dir,'group_ER','pingouin_stats','imgs',group,test)
     if not os.path.exists(outdir):os.makedirs(outdir)
     for col in df.columns:
-        # if 'p' in col: df[col] = 1 - df[col]
+        if not anova and 'p' in col: df[col] = 1 - df[col]
         img = masker.inverse_transform(df[col].values)
-        nib.save(img,os.path.join(outdir,'%s_%s.nii.gz'%(col,val)))
-        
+        nib.save(img,os.path.join(outdir,'%s_%s.nii.gz'%(test,col)))
 def create_mem_dfs(group):
     mem_phases = ['memory_run_1','memory_run_2','memory_run_3']
     subjects = {'control':sub_args,
@@ -134,12 +133,12 @@ def merge_sl_res(group='control'):#meant for TACC
     save_str = os.path.join(WORK,'group_rsa','%s_std_item_ER.npy'%(group))
     np.save(save_str,results)
 
-def compute_stats(group='control',test='cs_comp',val='p'):
+def compute_stats(group='control',test='cs_comp'):
     
     df = pd.read_csv(os.path.join(data_dir,'group_ER','%s_template_df.csv'%(group)),index_col=0)
     data = np.load(os.path.join(data_dir,'group_ER','%s_std_item_ER.npy'%(group)))
     nvox = data.shape[2]
-    save_str = os.path.join(data_dir,'group_ER','pingouin_stats','%s_%s_%s.npy'%(group,test,val))
+    save_str = os.path.join(data_dir,'group_ER','pingouin_stats','%s_%s.csv'%(group,test))
 
     n_cpus = multiprocessing.cpu_count()
 
@@ -150,12 +149,14 @@ def compute_stats(group='control',test='cs_comp',val='p'):
         if i%1000 == 0:print(i)#some marker of progress
         return anova['p-unc'].values
     
-    def cs_comp_rm(i):
+    def group_phase_comp(i):
         vdf = df.copy()
         vdf.rsa = data[:,:,i].flatten()
-        vdf = vdf.set_index(['trial_type','encode','subject'])
-        vdf = (vdf.loc['CS+'] - vdf.loc['CS-']).reset_index()
-        anova = pg.rm_anova(data=vdf,dv='rsa',within='encode',subject='subject')
+        vdf = vdf.set_index(['encode','trial_type','subject'])
+        vdf = (vdf.rsa.loc['fear_conditioning'] - vdf.rsa.loc['extinction']).reset_index()
+        vdf['group'] = vdf.subject.apply(lgroup)
+        anova = pg.mixed_anova(data=vdf,dv='rsa',within='trial_type',between='group',subject='subject')
+        if i%1000 == 0:print(i)#some marker of progress
         return anova['p-unc'].values
 
     def group_cs_comp(i):
@@ -163,18 +164,37 @@ def compute_stats(group='control',test='cs_comp',val='p'):
         vdf.rsa = data[:,:,i].flatten()
         vdf = vdf.set_index(['trial_type','encode','subject'])
         vdf = (vdf.rsa.loc['CS+'] - vdf.rsa.loc['CS-']).reset_index()
-        vdf['group'] = (vdf.subject < 100).astype(int)
+        vdf['group'] = vdf.subject.apply(lgroup)
         anova = pg.mixed_anova(data=vdf,dv='rsa',within='encode',between='group',subject='subject')
         if i%1000 == 0:print(i)#some marker of progress
         return anova['p-unc'].values
 
+    def fear_ext(i):
+        vdf = df.copy()
+        vdf.rsa = data[:,:,i].flatten()
+        vdf = vdf.groupby(['encode','trial_type','subject']).mean()
+        t, p = ttest_rel(vdf.rsa.loc[('fear_conditioning','CS+')],vdf.rsa.loc[('extinction','CS+')])
+        return [t,p]
+
+    def fear_ext_cs(i):
+        vdf = df.copy()
+        vdf.rsa = data[:,:,i].flatten()
+        vdf = vdf.groupby(['trial_type','encode','subject']).mean()
+        vdf = vdf.rsa.loc['CS+'] - vdf.rsa.loc['CS-']
+        t, p = ttest_rel(vdf.loc['fear_conditioning'],vdf.loc['extinction'])
+        return [t,p]
+
     jobs = {'rm'     :twoway_rm,
-            'cs_comp':cs_comp_rm,
-            'group_cs_comp':group_cs_comp}
+            'group_phase_comp':group_phase_comp,
+            'group_cs_comp':group_cs_comp,
+            'fear_ext':fear_ext,
+            'fear_ext_cs':fear_ext_cs}
     
-    tests = {'rm'     :['encode','trial_type','intrx'],
-             'cs_comp':['encode'],
-             'group_cs_comp':['group','encode','intrx']}
+    tests = {'rm'              :['encode','trial_type','intrx'],
+             'group_phase_comp':['group','trial_type','intrx'],
+             'group_cs_comp'   :['group','encode','intrx'],
+             'fear_ext'        :['t','p'],
+             'fear_ext_cs'     :['t','p']}
 
     res = Parallel(n_jobs=n_cpus)(delayed(jobs[test])(i) for i in range(data.shape[2]))
 

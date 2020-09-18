@@ -3,6 +3,7 @@ from preprocess_library import meta
 from glm_timing import *
 from shutil import copytree, move, copyfile
 from nilearn.input_data import NiftiMasker
+from subprocess import Popen
 
 def pop_fsl_timing(subs=None):
     # if p: subs = p_sub_args
@@ -71,25 +72,26 @@ def warp_input(sub=0, phase=None):
         os.system('applywarp --in=%s --ref=$FSL_DIR/data/standard/MNI152_T1_1mm_brain.nii.gz --out=%s --premat=%s --warp=%s'%(
             bold, std, func2struct, struct_warp_img))
 
-def move2tacc():
+def move2tacc(subject):
 
-    # dest = os.path.join('/Volumes/DunsmoorRed','fc')
-    dest = os.path.join('/Users/ach3377/Desktop','fc')
+    dest = os.path.join('/Volumes/DunsmoorRed','fc')
+    # dest = os.path.join('/Users/ach3377/Desktop','fc')
     # dest = os.path.join('/Volumes/DunsmoorLab','FearCon_nifti')
     # dest = os.path.join('C:\\Users','ACH','Desktop','fc')
     # dest = os.path.join('/mnt/c/Users/ACH/Desktop/fc')
     if not os.path.exists(dest): os.mkdir(dest)
 
     # for sub in [23,24,25,26,122,123,124,125]:
-    for sub in all_sub_args:
+    for sub in [subject]:
     # for sub in [21]:
         subj = meta(sub)
         sub_dir = os.path.join(dest,subj.fsub)
         os.mkdir(sub_dir)
         bold_dir = os.path.join(sub_dir,'bold')
+        os.mkdir(bold_dir)
         # orig = os.path.join(bold_dir,'orig')
-        betas = os.path.join(bold_dir,'beta')
-        os.makedirs(betas)
+        # betas = os.path.join(bold_dir,'beta')
+        # os.makedirs(betas)
 
         # mask_dir = os.path.join(sub_dir,'mask')
         # os.makedirs(mask_dir)
@@ -117,13 +119,13 @@ def move2tacc():
         
         # os.mkdir(os.path.join(fc,'%s'%(subj.fsub)))
 
-        for phase in fsl_betas:
-            # if phase == 'localizer_2' and sub == 107: pass
+        for phase in nifti_paths:
+            if phase == 'localizer_2' and sub == 107: pass
             # elif 'localizer' in phase:
-            if 'memory' in phase:
-                run = os.path.join(subj.bold_dir, fsl_betas[phase])
-                cpy = os.path.join(betas, os.path.split(fsl_betas[phase])[-1])
-                copyfile(run,cpy)
+            # if 'memory' in phase:
+            run = os.path.join(subj.bold_dir, nifti_paths[phase])
+            cpy = os.path.join(bold_dir, os.path.split(nifti_paths[phase])[-1])
+            fastcopy(run,cpy)
 
         # save_dict = raw_paths
         # for phase in save_dict:
@@ -256,6 +258,16 @@ def fs_roi_mask(sub):
             mask, subj.refvol_be, anat2func, mask))
 
         os.system('fslmaths %s -bin %s'%(mask,mask))
+
+def check_annot(sub):
+    subj = meta(sub)
+    if len(os.listdir(subj.fs_label)) < 2:
+        lh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(subj.fsub,subj.fsub), '--hemi', 'lh', '--outdir', '%s'%(subj.fs_label)]
+        rh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(subj.fsub,subj.fsub), '--hemi', 'rh', '--outdir', '%s'%(subj.fs_label)]
+    
+        Popen(lh_pop_cmd).wait()
+        Popen(rh_pop_cmd).wait()
+
 
 def pe_beta_masker(sub,phase='extinction_recall',roi='PPA',save_dict=None):
     subj = meta(sub)

@@ -52,6 +52,7 @@ class View(object):
 			# 			','.join([ x for x in self.available_imgs]))))
 			# data = nib.load(fname).get_data().swapaxes(0,2) #,'float32')
 			data = os.path.join(data_dir,nii_name)
+			# data = os.path.join(data_dir,nii_name)
 		return data
 
 

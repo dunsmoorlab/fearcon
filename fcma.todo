@@ -1,0 +1,6 @@
+data wrangling
+ ☐ time series needs to be in standard space
+   ☐ 5mm smoothing ok with this
+ ☐ linear detrend
+ ☐ high-pass temporal filtering (128s)
+ 

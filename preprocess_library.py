@@ -543,8 +543,8 @@ class preproc(object):
 		#populate all of the label files from each hemisphere's annotate file
 		if overwrite:
 
-			# lh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(self.subj.fsub,self.subj.fsub), '--hemi', 'lh', '--outdir', '%s'%(self.subj.fs_label)]
-			# rh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(self.subj.fsub,self.subj.fsub), '--hemi', 'rh', '--outdir', '%s'%(self.subj.fs_label)]
+			lh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(self.subj.fsub,self.subj.fsub), '--hemi', 'lh', '--outdir', '%s'%(self.subj.fs_label)]
+			rh_pop_cmd = ['mri_annotation2label', '--s', '%s/%sfs'%(self.subj.fsub,self.subj.fsub), '--hemi', 'rh', '--outdir', '%s'%(self.subj.fs_label)]
 			
 			Popen(lh_pop_cmd,env=env).wait()
 			Popen(rh_pop_cmd,env=env).wait()
@@ -823,6 +823,8 @@ class meta(object):
 
 			self.mask = os.path.join(self.subj_dir, 'mask/')
 			self.roi = os.path.join(self.mask,'roi')
+			self.fs_mask = os.path.join(self.mask,'fs_mask')
+			if not os.path.exists(self.fs_mask):os.mkdir(self.fs_mask)
 
 
 			self.refvol_dir = os.path.join(self.bold_dir,'refvol')

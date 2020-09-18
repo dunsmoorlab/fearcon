@@ -1,0 +1,92 @@
+{
+    "descriptions": [
+        {
+            "dataType": "anat",
+            "modalityLabel": "T1w",
+            "criteria": {
+                "SeriesDescription": "MPRAGE"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-baseline",
+            "criteria": {
+                "SeriesDescription": "Baseline",
+                "ProtocolName": "Baseline"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-fear",
+            "criteria": {
+                "SeriesDescription": "Fear_Conditioning",
+                "ProtocolName": "Fear_Conditioning"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-extinction",
+            "criteria": {
+                "SeriesDescription": "Extinction",
+                "ProtocolName": "Extinction"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-renewal",
+            "criteria": {
+                "SeriesDescription": "Extinction_Recall",
+                "ProtocolName": "Extinction_Recall"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-memory",
+            "criteria": {
+                "SeriesDescription": "Memory_Run_1",
+                "ProtocolName": "Memory_Run_1"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-memory",
+            "criteria": {
+                "SeriesDescription": "Memory_Run_2",
+                "ProtocolName": "Memory_Run_2"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-memory",
+            "criteria": {
+                "SeriesDescription": "Memory_Run_3",
+                "ProtocolName": "Memory_Run_3"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-localizer",
+            "criteria": {
+                "SeriesDescription": "Localizer_1",
+                "ProtocolName": "Localizer_1"
+            }
+        },
+        {
+            "dataType": "func",
+            "modalityLabel": "bold",
+            "customLabels": "task-localizer",
+            "criteria": {
+                "SeriesDescription": "Localizer_2",
+                "ProtocolName": "Localizer_2"
+            }
+        }
+    ]
+}
